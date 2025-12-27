@@ -117,9 +117,11 @@ class MarauderProtocolParser(
                 val bssid = match.groupValues[3].trim()
                 val channel = match.groupValues[4].toInt()
                 val rssi = match.groupValues[5].toInt()
-                val encryption = match.groupValues[6].trim()
+                var encryption = match.groupValues[6].trim()
                 
+                // Check if selected and remove the marker from encryption string
                 val selected = cleanLine.contains("*") || cleanLine.contains("(*)") 
+                encryption = encryption.replace("(*)", "").trim()
                 
                 aps.add(
                     AccessPoint(

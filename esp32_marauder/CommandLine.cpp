@@ -284,6 +284,26 @@ void CommandLine::runCommand(String input) {
     return;
   }
 
+  // Protocol commands for seamless communication
+  if (input.startsWith("version")) {
+    Serial.println("#VERSION:" + (String)MARAUDER_VERSION);
+    return;
+  }
+  
+  if (input.startsWith("hardware")) {
+    #ifdef HARDWARE_NAME
+      Serial.println("#HARDWARE:" + (String)HARDWARE_NAME);
+    #else
+      Serial.println("#HARDWARE:GENERIC_ESP32");
+    #endif
+    return;
+  }
+  
+  if (input.startsWith("heap")) {
+    Serial.println("#HEAP:" + (String)ESP.getFreeHeap());
+    return;
+  }
+
   // Stop Scan
   if (cmd_args.get(0) == STOPSCAN_CMD) {
     //if (wifi_scan_obj.currentScanMode == OTA_UPDATE) {
@@ -1475,13 +1495,18 @@ void CommandLine::runCommand(String input) {
 
     // List APs
     if (ap_sw != -1) {
+      Serial.println("#Access Points");
       for (int i = 0; i < access_points->size(); i++) {
+        String bssid_str = macToString(access_points->get(i).bssid);
+        String security_str = wifi_scan_obj.security_type_to_string(access_points->get(i).sec);
+        
         if (access_points->get(i).selected) {
-          Serial.println("[" + (String)i + "][CH:" + (String)access_points->get(i).channel + "] " + access_points->get(i).essid + " " + (String)access_points->get(i).rssi + " (selected)");
+          Serial.println("[" + (String)i + "] " + access_points->get(i).essid + " (" + bssid_str + ") Ch: " + (String)access_points->get(i).channel + " RSSI: " + (String)access_points->get(i).rssi + " " + security_str + " (*)");
           count_selected += 1;
         } 
-        else
-          Serial.println("[" + (String)i + "][CH:" + (String)access_points->get(i).channel + "] " + access_points->get(i).essid + " " + (String)access_points->get(i).rssi);
+        else {
+          Serial.println("[" + (String)i + "] " + access_points->get(i).essid + " (" + bssid_str + ") Ch: " + (String)access_points->get(i).channel + " RSSI: " + (String)access_points->get(i).rssi + " " + security_str);
+        }
       }
       this->showCounts(count_selected);
     }
@@ -1499,6 +1524,7 @@ void CommandLine::runCommand(String input) {
     }
     // List SSIDs
     else if (ss_sw != -1) {
+      Serial.println("#SSIDs");
       for (int i = 0; i < ssids->size(); i++) {
         if (ssids->get(i).selected) {
           Serial.println("[" + (String)i + "] " + ssids->get(i).essid + " (selected)");
@@ -1511,6 +1537,7 @@ void CommandLine::runCommand(String input) {
     }
     // List Stations
     else if (cl_sw != -1) {
+      Serial.println("#Stations");
       char sta_mac[] = "00:00:00:00:00:00";
       for (int x = 0; x < access_points->size(); x++) {
         Serial.println("[" + (String)x + "] " + access_points->get(x).essid + " " + (String)access_points->get(x).rssi + ":");
