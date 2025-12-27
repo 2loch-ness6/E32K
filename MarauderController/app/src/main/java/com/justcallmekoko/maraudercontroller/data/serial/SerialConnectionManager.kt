@@ -89,7 +89,12 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
             addAction(ACTION_USB_PERMISSION)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         }
-        context.registerReceiver(usbReceiver, filter)
+        // Register receiver with RECEIVER_NOT_EXPORTED for Android 13+ compatibility
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            context.registerReceiver(usbReceiver, filter)
+        }
     }
     
     /**
