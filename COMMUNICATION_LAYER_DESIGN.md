@@ -405,12 +405,12 @@ val response = serialManager.sendBinaryCommandAndWait(
 
 ## Protocol Negotiation
 
-The system uses implicit protocol detection:
+The system uses implicit protocol detection, with the binary parser owning the serial stream:
 
-1. **Binary Detection:** If `START_BYTE (0xA5)` is encountered, packet is binary
-2. **Text Fallback:** All other data treated as text
-3. **No Handshake Required:** Both protocols always available
-4. **Concurrent Operation:** Can mix text and binary commands
+1. **Binary Priority:** Incoming serial bytes are first consumed by the binary state machine; when a `START_BYTE (0xA5)` is seen, a binary packet parse is initiated.
+2. **Non‑binary Bytes:** While the binary parser is waiting for a start byte, any bytes that are not `START_BYTE (0xA5)` are consumed and ignored by the binary interface and are **not** forwarded to the text protocol handler.
+3. **Text Protocol Usage:** Reliable text‑mode communication requires either a separate connection or phases where no binary traffic is present; arbitrarily interleaving text with binary packets can result in text data being dropped.
+4. **Concurrent Operation (with limitations):** Both parsers can be active, but because the binary parser consumes the underlying stream first, only well‑framed traffic that respects the binary protocol can be safely mixed without data loss.
 
 ## Error Handling
 
