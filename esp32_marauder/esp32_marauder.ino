@@ -47,6 +47,7 @@ https://www.online-utility.org/image/convert/to/XBM
 #include "settings.h"
 #include "CommandLine.h"
 #include "lang_var.h"
+#include "BinaryInterface.h"
 
 #ifdef HAS_BATTERY
   #include "BatteryInterface.h"
@@ -83,6 +84,7 @@ EvilPortal evil_portal_obj;
 Buffer buffer_obj;
 Settings settings_obj;
 CommandLine cli_obj;
+BinaryInterface binary_obj;
 
 #ifdef HAS_GPS
   GpsInterface gps_obj;
@@ -343,6 +345,7 @@ void loop()
   #endif
 
   // Update all of our objects
+  binary_obj.main(currentTime);
   cli_obj.main(currentTime);
   #ifdef HAS_SCREEN
     display_obj.main(wifi_scan_obj.currentScanMode);
