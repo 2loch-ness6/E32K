@@ -96,9 +96,9 @@ Convenience scripts are provided for cross-platform building.
 *   **UI Pattern:** Jetpack Compose. Prefer functional components and State hoisting.
 *   **Async:** Use Kotlin Coroutines (`suspend` functions, `viewModelScope`) and `Flow` for reactive data streams.
 *   **Serial Communication:**
-    *   Commands are sent as strings via `SerialConnectionManager`.
-    *   Responses are parsed by `MarauderProtocolParser` using Regex.
-    *   **Crucial:** The parser must handle fragmented serial data.
+    *   **Core Protocol:** Uses a custom Binary Protocol (v1.1) for high-speed command and control (Scanning, Attacks, Files).
+    *   **Legacy:** Some text-based output is still parsed for logging/debugging, but core logic relies on binary packets (`RESP_SCAN_DATA`).
+    *   **Key Components:** `SerialConnectionManager` (handles transport & binary parsing), `MarauderBinaryProtocol` (schema definitions).
 *   **Resources:** All strings should be extracted to `strings.xml` for potential future localization.
 
 ## 6. Key Configuration Files

@@ -16,17 +16,17 @@
 **Goal:** Replace slow Serial Text parsing with real-time Binary parsing for all scanning modes.
 
 ### 2.1 Firmware Hooks (`esp32_marauder/`)
-*   **Station (Client) Scan:**
+*   [x] **Station (Client) Scan:**
     *   *Action:* Inject `binary_obj.sendResponse(RESP_SCAN_DATA, ...)` into `WiFiScan::stationSnifferCallback`.
     *   *Payload:* `[Type: STA] [RSSI] [MAC] [BSSID]`.
-*   **Bluetooth/BLE:**
+*   [ ] **Bluetooth/BLE:**
     *   *Action:* Inject hooks into `WiFiScan.cpp` BLE callbacks.
     *   *Payload:* `[Type: BLE] [RSSI] [MAC] [Name_Len] [Name]`.
-*   **GPS/Wardriving:**
+*   [ ] **GPS/Wardriving:**
     *   *Action:* Stream NMEA or structured GPS data via binary packets during scan loops.
 
 ### 2.2 Android Parsing (`MarauderController/`)
-*   **Binary Parser Implementation:**
+*   [x] **Binary Parser Implementation:**
     *   *Action:* Update `SerialConnectionManager.kt` to handle `RESP_SCAN_DATA` (0x20).
     *   *Logic:* Deserialize the payload based on the first byte (Type ID) and update `MarauderRepository` flows directly, bypassing the regex text parser.
 
