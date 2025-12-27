@@ -26,7 +26,17 @@ fun MainScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ESP32 Marauder Controller") },
+                title = { 
+                    Text(
+                        "GEMINI NEXUS", 
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    ) 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                ),
                 actions = {
                     // Connection status indicator
                     ConnectionStatusChip(
@@ -35,12 +45,12 @@ fun MainScreen(
                     )
                     
                     IconButton(onClick = { viewModel.toggleTerminal() }) {
-                        Icon(Icons.Default.Terminal, "Terminal")
+                        Icon(Icons.Default.Terminal, "Terminal", tint = MaterialTheme.colorScheme.onSurface)
                     }
                     
                     if (isConnected) {
                         IconButton(onClick = { viewModel.refreshDeviceInfo() }) {
-                            Icon(Icons.Default.Info, "Device Info")
+                            Icon(Icons.Default.Info, "Device Info", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -48,30 +58,49 @@ fun MainScreen(
         },
         bottomBar = {
             if (isConnected) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
                     NavigationBarItem(
                         selected = selectedTab == 0,
                         onClick = { viewModel.selectTab(0) },
-                        icon = { Icon(Icons.Default.Wifi, "WiFi") },
-                        label = { Text("WiFi") }
+                        icon = { Icon(Icons.Default.Dashboard, "Dashboard") },
+                        label = { Text("Home") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
                     )
                     NavigationBarItem(
                         selected = selectedTab == 1,
                         onClick = { viewModel.selectTab(1) },
-                        icon = { Icon(Icons.Default.Security, "Attacks") },
-                        label = { Text("Attacks") }
+                        icon = { Icon(Icons.Default.Wifi, "WiFi") },
+                        label = { Text("WiFi") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
                     )
                     NavigationBarItem(
                         selected = selectedTab == 2,
                         onClick = { viewModel.selectTab(2) },
-                        icon = { Icon(Icons.Default.ListAlt, "Lists") },
-                        label = { Text("Lists") }
+                        icon = { Icon(Icons.Default.Security, "Attacks") },
+                        label = { Text("Attacks") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
                     )
                     NavigationBarItem(
                         selected = selectedTab == 3,
                         onClick = { viewModel.selectTab(3) },
                         icon = { Icon(Icons.Default.Settings, "Settings") },
-                        label = { Text("Settings") }
+                        label = { Text("Config") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
                     )
                 }
             }
@@ -81,6 +110,7 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Main content
             Box(
@@ -93,17 +123,18 @@ fun MainScreen(
                         ConnectionScreen(viewModel = viewModel)
                     }
                     selectedTab == 0 -> {
-                        WiFiScanScreen(viewModel = viewModel)
+                        DashboardScreen(viewModel = viewModel)
                     }
                     selectedTab == 1 -> {
-                        AttackScreen(viewModel = viewModel)
+                        WiFiScanScreen(viewModel = viewModel)
                     }
                     selectedTab == 2 -> {
-                        ListsScreen(viewModel = viewModel)
+                        AttackScreen(viewModel = viewModel)
                     }
                     selectedTab == 3 -> {
                         SettingsScreen(viewModel = viewModel)
                     }
+                    // Handle legacy "Lists" tab index shifting if necessary, or just drop it for now
                 }
             }
         }

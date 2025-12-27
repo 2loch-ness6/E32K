@@ -1,10 +1,12 @@
 package com.justcallmekoko.maraudercontroller.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -12,122 +14,241 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.justcallmekoko.maraudercontroller.data.protocol.AccessPoint
 import com.justcallmekoko.maraudercontroller.ui.viewmodel.MarauderViewModel
+import com.justcallmekoko.maraudercontroller.ui.theme.NexusSuccess
+import com.justcallmekoko.maraudercontroller.ui.theme.NexusWarning
+import com.justcallmekoko.maraudercontroller.ui.theme.NexusError
 
 @Composable
 fun WiFiScanScreen(viewModel: MarauderViewModel) {
     val accessPoints by viewModel.accessPoints.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
     val isLiveScanning by viewModel.isLiveScanning.collectAsState()
-    val currentScan by viewModel.currentScan.collectAsState()
     
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Controls
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Control Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Scan Button
             Button(
                 onClick = { 
                     if (isScanning) viewModel.stopScan() 
                     else viewModel.startScanAp() 
                 },
+                modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isScanning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Icon(
+                    imageVector = if (isScanning) Icons.Default.Stop else Icons.Default.Radar,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (isScanning) "STOP" else "SCAN APs")
+            }
+            
+            // Live Toggle
+            FilledTonalButton(
+                onClick = { viewModel.toggleLiveScan() },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (isLiveScanning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
                 Icon(
-                    imageVector = if (isScanning) Icons.Default.Stop else Icons.Default.WifiFind,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    Icons.Default.Autorenew, 
+                    contentDescription = null, 
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isScanning) "Stop" else "Scan")
+                Text(if (isLiveScanning) "LIVE ON" else "LIVE OFF")
             }
-            
-            Button(
-                onClick = { viewModel.toggleLiveScan() },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isLiveScanning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
+
+            // Refresh Icon Button
+            IconButton(
+                onClick = { viewModel.refreshAccessPoints() },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 )
             ) {
-                Icon(Icons.Default.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isLiveScanning) "Live On" else "Live")
-            }
-            
-            OutlinedButton(onClick = { viewModel.refreshAccessPoints() }) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Refresh List")
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh List")
             }
         }
         
-        // List Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "ID",
-                modifier = Modifier.width(40.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "SSID",
-                modifier = Modifier.weight(1f),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "RSSI",
-                modifier = Modifier.width(50.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "CH",
-                modifier = Modifier.width(40.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-            Text(
-                text = "SEC",
-                modifier = Modifier.width(50.dp),
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-        }
-        
+        // List Content
         if (accessPoints.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No Access Points Found",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.WifiFind,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No Access Points Found",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Start a scan to detect networks",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
             }
         } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .weight(1f),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 itemsIndexed(accessPoints) { index, ap ->
-                    AccessPointItem(
+                    AccessPointCard(
                         index = index,
                         ap = ap,
                         onSelect = { viewModel.selectAccessPoint(index) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AccessPointCard(
+    index: Int,
+    ap: AccessPoint,
+    onSelect: () -> Unit
+) {
+    Card(
+        onClick = onSelect,
+        colors = CardDefaults.cardColors(
+            containerColor = if (ap.selected) 
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) 
+            else 
+                MaterialTheme.colorScheme.surface
+        ),
+        border = if (ap.selected) 
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary) 
+        else null,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Index Badge
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(4.dp),
+                modifier = Modifier.size(24.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "$index",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Main Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (ap.ssid.isBlank()) "<HIDDEN>" else ap.ssid,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = if (ap.ssid.isBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Tag, 
+                        contentDescription = null, 
+                        modifier = Modifier.size(10.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = ap.bssid,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "CH: ${ap.channel}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            // Stats Column
+            Column(horizontalAlignment = Alignment.End) {
+                // RSSI Badge
+                Surface(
+                    color = getRssiColor(ap.rssi).copy(alpha = 0.1f),
+                    contentColor = getRssiColor(ap.rssi),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "${ap.rssi} dBm",
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Security
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (ap.encryption.contains("OPEN", true)) {
+                        Icon(Icons.Default.LockOpen, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error)
+                    } else {
+                        Icon(Icons.Default.Lock, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = ap.encryption.take(4),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 10.sp
+                    )
                 }
             }
         }
@@ -135,74 +256,10 @@ fun WiFiScanScreen(viewModel: MarauderViewModel) {
 }
 
 @Composable
-fun AccessPointItem(
-    index: Int,
-    ap: AccessPoint,
-    onSelect: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .background(if (ap.selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f) else Color.Transparent)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Checkbox(
-            checked = ap.selected,
-            onCheckedChange = { onSelect() },
-            modifier = Modifier.size(32.dp)
-        )
-        
-        Text(
-            text = "$index",
-            modifier = Modifier.width(32.dp),
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = if (ap.ssid.isBlank()) "<HIDDEN>" else ap.ssid,
-                fontWeight = FontWeight.SemiBold,
-                color = if (ap.ssid.isBlank()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
-            )
-            Text(
-                text = ap.bssid,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        
-        Text(
-            text = "${ap.rssi}",
-            modifier = Modifier.width(50.dp),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = getRssiColor(ap.rssi)
-        )
-        
-        Text(
-            text = "${ap.channel}",
-            modifier = Modifier.width(40.dp),
-            fontSize = 12.sp
-        )
-        
-        Text(
-            text = ap.encryption.take(4),
-            modifier = Modifier.width(50.dp),
-            fontSize = 11.sp,
-            color = if (ap.encryption.contains("OPEN", true)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
 fun getRssiColor(rssi: Int): Color {
     return when {
-        rssi > -60 -> Color(0xFF4CAF50) // Green
-        rssi > -80 -> Color(0xFFFFC107) // Amber
-        else -> Color(0xFFF44336)       // Red
+        rssi > -60 -> NexusSuccess
+        rssi > -80 -> NexusWarning
+        else -> NexusError
     }
 }

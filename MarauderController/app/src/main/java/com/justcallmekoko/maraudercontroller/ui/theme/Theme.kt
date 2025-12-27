@@ -10,30 +10,38 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = MarauderPrimary,
-    secondary = MarauderSecondary,
-    tertiary = Pink80,
-    background = MarauderBackground,
-    surface = MarauderSurface,
-    error = MarauderDanger
+    primary = NexusPrimary,
+    onPrimary = Color.Black,
+    secondary = NexusSecondary,
+    onSecondary = Color.Black,
+    tertiary = NexusTertiary,
+    background = NexusBackground,
+    surface = NexusSurface,
+    surfaceVariant = NexusSurfaceVariant,
+    onSurface = NexusOnSurface,
+    onSurfaceVariant = NexusOnSurfaceVariant,
+    error = NexusError
 )
 
+// Force Dark Mode for this Hacker tool aesthetic, or define a light mode if strictly necessary.
+// For now, we align Light mode to look decent but prefer Dark.
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = NexusPrimary, // Keep the identity even in light mode
+    secondary = NexusSecondary,
+    tertiary = NexusTertiary
 )
 
 @Composable
 fun MarauderControllerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false,
+    darkTheme: Boolean = true, // Default to Dark for Cyber aesthetic
+    dynamicColor: Boolean = false, // Disable dynamic color to enforce brand
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -49,7 +57,7 @@ fun MarauderControllerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            window.statusBarColor = NexusBackground.toArgb() // Match background
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
