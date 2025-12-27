@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Firmware Build Script for ESP32 Marauder
-# Uses arduino-cli to compile the firmware source located in app/src/main/assets/firmware_source
+# Uses arduino-cli to compile the firmware source located in app/src/main/assets/esp32_marauder
 
-FIRMWARE_SRC="app/src/main/assets/firmware_source"
+FIRMWARE_SRC="app/src/main/assets/esp32_marauder"
 BUILD_DIR="build_firmware_tmp"
 OUTPUT_DIR="app/src/main/assets/firmware"
 SKETCH_NAME="esp32_marauder.ino"
@@ -42,9 +42,9 @@ fi
 
 # Build
 echo "Compiling firmware..."
-arduino-cli compile \
+arduino-cli compile --build-property "build.partitions=huge_app" --build-property "upload.maximum_size=3145728" \
     --fqbn "$FQBN" \
-    --libraries "$FIRMWARE_SRC/libraries" \
+    --libraries "$FIRMWARE_SRC/libraries" --library "/root/Arduino/libraries" \
     --build-path "$BUILD_DIR" \
     --output-dir "$OUTPUT_DIR" \
     "$FIRMWARE_SRC/$SKETCH_NAME"
