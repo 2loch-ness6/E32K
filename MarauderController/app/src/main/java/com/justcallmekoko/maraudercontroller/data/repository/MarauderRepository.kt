@@ -12,6 +12,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 /**
  * Repository managing Marauder device state and communication
@@ -53,6 +55,9 @@ class MarauderRepository(context: Context) {
     
     private val _terminalOutput = MutableStateFlow<List<String>>(emptyList())
     val terminalOutput: StateFlow<List<String>> = _terminalOutput.asStateFlow()
+
+    private val _bluetoothDevices = MutableStateFlow<List<BluetoothDevice>>(emptyList())
+    val bluetoothDevices: StateFlow<List<BluetoothDevice>> = _bluetoothDevices.asStateFlow()
     
     private val _currentChannel = MutableStateFlow(1)
     val currentChannel: StateFlow<Int> = _currentChannel.asStateFlow()
@@ -132,6 +137,91 @@ class MarauderRepository(context: Context) {
                 // Log parsing error
             }
         }
+        // Type 0x02: Station
+        else if (type == 0x02 && payload.size >= 15) {
+            try {
+                // [Type:1][RSSI:1][MAC:6][BSSID:6][Ch:1]
+                val rssi = payload[1].toByte().toInt()
+                val mac = payload.copyOfRange(2, 8).joinToString(":") { "%02X".format(it) }
+                val bssid = payload.copyOfRange(8, 14).joinToString(":") { "%02X".format(it) }
+                val channel = payload[14].toInt() and 0xFF
+
+                val newSta = Station(
+                    mac = mac,
+                    rssi = rssi,
+                    channel = channel,
+                    lastSeen = System.currentTimeMillis()
+                )
+                updateStationList(newSta)
+            } catch (e: Exception) { }
+        }
+        // Type 0x03: BLE Device
+        else if (type == 0x03 && payload.size >= 9) {
+            try {
+                // [Type:1][RSSI:1][MAC:6][Name_Len:1][Name:Var]
+                val rssi = payload[1].toByte().toInt()
+                val mac = payload.copyOfRange(2, 8).joinToString(":") { "%02X".format(it) }
+                val nameLen = payload[8].toInt() and 0xFF
+                var name = ""
+                if (nameLen > 0 && payload.size >= 9 + nameLen) {
+                    name = String(payload, 9, nameLen)
+                }
+
+                val newBle = BluetoothDevice(
+                    address = mac,
+                    name = name,
+                    rssi = rssi,
+                    lastSeen = System.currentTimeMillis()
+                )
+                updateBluetoothDeviceList(newBle)
+            } catch (e: Exception) { }
+        }
+        // Type 0x04: GPS
+        else if (type == 0x04 && payload.size >= 27) {
+            try {
+                // [Type:1][Lat:8][Lon:8][Alt:8][Sats:1][Fix:1]
+                val buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
+                buffer.get() // Skip type
+                val lat = buffer.getDouble()
+                val lon = buffer.getDouble()
+                val alt = buffer.getDouble()
+                val sats = buffer.get().toInt() and 0xFF
+                val fix = buffer.get().toInt() != 0
+                
+                _gpsData.value = GpsData(
+                    latitude = lat,
+                    longitude = lon,
+                    altitude = alt,
+                    satellites = sats,
+                    fix = fix,
+                    timestamp = System.currentTimeMillis().toString()
+                )
+            } catch (e: Exception) { }
+        }
+    }
+
+    private fun updateStationList(newSta: Station) {
+        val currentList = _stations.value.toMutableList()
+        val index = currentList.indexOfFirst { it.mac == newSta.mac }
+        
+        if (index != -1) {
+            currentList[index] = newSta
+        } else {
+            currentList.add(newSta)
+        }
+        _stations.value = currentList
+    }
+
+    private fun updateBluetoothDeviceList(newBle: BluetoothDevice) {
+        val currentList = _bluetoothDevices.value.toMutableList()
+        val index = currentList.indexOfFirst { it.address == newBle.address }
+        
+        if (index != -1) {
+            currentList[index] = newBle
+        } else {
+            currentList.add(newBle)
+        }
+        _bluetoothDevices.value = currentList
     }
 
     private fun updateAccessPointList(newAp: AccessPoint) {

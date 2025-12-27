@@ -387,6 +387,19 @@ extern "C" {
             }
           }
           else if (wifi_scan_obj.currentScanMode == BT_SCAN_ALL) {
+            // Binary Protocol RESP_SCAN_DATA (Type 0x03: BLE)
+            uint8_t mac_bytes[6];
+            wifi_scan_obj.copyNimbleMac(advertisedDevice->getAddress(), mac_bytes);
+            String name = advertisedDevice->getName().c_str();
+            uint8_t name_len = name.length();
+            uint8_t bin_payload[9 + name_len];
+            bin_payload[0] = 0x03; // Type: BLE
+            bin_payload[1] = (uint8_t)advertisedDevice->getRSSI();
+            memcpy(&bin_payload[2], mac_bytes, 6);
+            bin_payload[8] = name_len;
+            if (name_len > 0) memcpy(&bin_payload[9], name.c_str(), name_len);
+            binary_obj.sendResponse(RESP_SCAN_DATA, bin_payload, 9 + name_len);
+
             if (buf >= 0)
             {
               display_string.concat(text_table4[0]);
@@ -1120,6 +1133,19 @@ extern "C" {
             }
           }
           else if (wifi_scan_obj.currentScanMode == BT_SCAN_ALL) {
+            // Binary Protocol RESP_SCAN_DATA (Type 0x03: BLE)
+            uint8_t mac_bytes[6];
+            wifi_scan_obj.copyNimbleMac(advertisedDevice->getAddress(), mac_bytes);
+            String name = advertisedDevice->getName().c_str();
+            uint8_t name_len = name.length();
+            uint8_t bin_payload[9 + name_len];
+            bin_payload[0] = 0x03; // Type: BLE
+            bin_payload[1] = (uint8_t)advertisedDevice->getRSSI();
+            memcpy(&bin_payload[2], mac_bytes, 6);
+            bin_payload[8] = name_len;
+            if (name_len > 0) memcpy(&bin_payload[9], name.c_str(), name_len);
+            binary_obj.sendResponse(RESP_SCAN_DATA, bin_payload, 9 + name_len);
+
             if (buf >= 0)
             {
               display_string.concat(text_table4[0]);
@@ -3550,6 +3576,20 @@ bool WiFiScan::RunGPSInfo(bool tracker, bool display, bool poi) {
   bool return_val = true;
   #ifdef HAS_GPS
     String text=gps_obj.getText();
+
+    // Binary Protocol RESP_SCAN_DATA (Type 0x04: GPS)
+    // [Type:1][Lat:8][Lon:8][Alt:8][Sats:1][Fix:1]
+    uint8_t bin_payload[27];
+    bin_payload[0] = 0x04; // Type: GPS
+    double lat = gps_obj.getLat().toDouble();
+    double lon = gps_obj.getLon().toDouble();
+    double alt = (double)gps_obj.getAlt();
+    memcpy(&bin_payload[1], &lat, 8);
+    memcpy(&bin_payload[9], &lon, 8);
+    memcpy(&bin_payload[17], &alt, 8);
+    bin_payload[25] = (uint8_t)gps_obj.getNumSats();
+    bin_payload[26] = (uint8_t)(gps_obj.getFixStatus() ? 1 : 0);
+    binary_obj.sendResponse(RESP_SCAN_DATA, bin_payload, 27);
 
     if (tracker) {
       if (gps_obj.getFixStatus()) {
@@ -7430,6 +7470,16 @@ void WiFiScan::stationSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t typ
   // Check if dest is broadcast
   if ((in_list) || (strcmp(dst_addr, "ff:ff:ff:ff:ff:ff") == 0))
     return;
+
+  // Binary Protocol RESP_SCAN_DATA (Type 0x02: Station)
+  // [Type:1][RSSI:1][MAC:6][BSSID:6][Ch:1]
+  uint8_t bin_payload[15];
+  bin_payload[0] = 0x02; // Type: Station
+  bin_payload[1] = (uint8_t)snifferPacket->rx_ctrl.rssi;
+  for (int i = 0; i < 6; i++) bin_payload[2 + i] = snifferPacket->payload[i + frame_offset]; // Station MAC
+  for (int i = 0; i < 6; i++) bin_payload[8 + i] = access_points->get(ap_index).bssid[i]; // BSSID
+  bin_payload[14] = (uint8_t)wifi_scan_obj.set_channel;
+  binary_obj.sendResponse(RESP_SCAN_DATA, bin_payload, 15);
   
   // Add to list of stations
   if (mem_check) {

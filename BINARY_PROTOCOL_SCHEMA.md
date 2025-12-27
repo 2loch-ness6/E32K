@@ -85,16 +85,33 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
 ### `RESP_SCAN_DATA` Payload Structure
 | Offset | Type | Description |
 | :--- | :--- | :--- |
-| 0 | Byte | **Data Type** (0x01=AP, 0x02=Station) |
+| 0 | Byte | **Data Type** (0x01=AP, 0x02=Station, 0x03=BLE) |
 | 1 | N Bytes | **Data Object** (See definitions below) |
 
 #### Data Object: Access Point (Type 0x01)
-*   **Size:** Fixed or Variable (Currently treating as fixed for MVP)
-*   Structure:
-    *   `Index` (1 Byte)
-    *   `RSSI` (1 Byte, signed)
-    *   `Channel` (1 Byte)
-    *   `MacAddr` (6 Bytes)
-    *   `SSID` (Variable, null-terminated or length-prefixed) - *Implementation Note: For MVP, maybe send raw string or simplify.*
+*   `RSSI` (1 Byte, signed)
+*   `Channel` (1 Byte)
+*   `MacAddr` (6 Bytes)
+*   `SSID_Len` (1 Byte)
+*   `SSID` (Variable)
+
+#### Data Object: Station (Type 0x02)
+*   `RSSI` (1 Byte, signed)
+*   `MacAddr` (6 Bytes)
+*   `BssidAddr` (6 Bytes)
+*   `Channel` (1 Byte)
+
+#### Data Object: BLE Device (Type 0x03)
+*   `RSSI` (1 Byte, signed)
+*   `MacAddr` (6 Bytes)
+*   `Name_Len` (1 Byte)
+*   `Name` (Variable)
+
+#### Data Object: GPS (Type 0x04)
+*   `Lat` (8 Bytes, Double)
+*   `Lon` (8 Bytes, Double)
+*   `Alt` (8 Bytes, Double)
+*   `Sats` (1 Byte)
+*   `Fix` (1 Byte, 0 or 1)
 
 **(To be expanded as implementation matures)**
