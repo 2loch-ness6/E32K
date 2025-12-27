@@ -75,11 +75,12 @@ void BinaryInterface::handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len) {
       break;
       
     case CMD_UPDATE_START:
-      // Enter update mode
-      update_mode = true;
+      // Try to begin update; only enter update mode on success
       if (Update.begin(UPDATE_SIZE_UNKNOWN)) {
+        update_mode = true;
         sendResponse(RESP_ACK, NULL, 0);
       } else {
+        update_mode = false;
         sendResponse(RESP_NACK, NULL, 0);
       }
       break;
