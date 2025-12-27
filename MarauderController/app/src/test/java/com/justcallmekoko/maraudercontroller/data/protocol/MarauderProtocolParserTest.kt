@@ -109,4 +109,36 @@ class MarauderProtocolParserTest {
         assertEquals(1, aps.size)
         assertEquals("CompactAP", aps[0].ssid)
     }
+    
+    @Test
+    fun `parse protocol version response`() {
+        val line = "#VERSION:v1.9.0"
+        val result = parser.parseLine(line)
+        assertTrue(result is MarauderResponse.VersionInfo)
+        assertEquals("v1.9.0", (result as MarauderResponse.VersionInfo).version)
+    }
+    
+    @Test
+    fun `parse protocol hardware response`() {
+        val line = "#HARDWARE:Flipper Zero Dev Board"
+        val result = parser.parseLine(line)
+        assertTrue(result is MarauderResponse.HardwareInfo)
+        assertEquals("Flipper Zero Dev Board", (result as MarauderResponse.HardwareInfo).hardware)
+    }
+    
+    @Test
+    fun `parse protocol heap response`() {
+        val line = "#HEAP:123456"
+        val result = parser.parseLine(line)
+        assertTrue(result is MarauderResponse.HeapInfo)
+        assertEquals(123456L, (result as MarauderResponse.HeapInfo).freeHeap)
+    }
+    
+    @Test
+    fun `parse protocol heap response with invalid number`() {
+        val line = "#HEAP:invalid"
+        val result = parser.parseLine(line)
+        assertTrue(result is MarauderResponse.HeapInfo)
+        assertEquals(0L, (result as MarauderResponse.HeapInfo).freeHeap)
+    }
 }

@@ -56,6 +56,23 @@ class MarauderProtocolParser(
             return MarauderResponse.Prompt
         }
         
+        // Check for protocol responses (version, hardware, heap)
+        if (trimmed.startsWith(ProtocolResponses.VERSION_PREFIX)) {
+            val version = trimmed.substringAfter(ProtocolResponses.VERSION_PREFIX).trim()
+            return MarauderResponse.VersionInfo(version)
+        }
+        
+        if (trimmed.startsWith(ProtocolResponses.HARDWARE_PREFIX)) {
+            val hardware = trimmed.substringAfter(ProtocolResponses.HARDWARE_PREFIX).trim()
+            return MarauderResponse.HardwareInfo(hardware)
+        }
+        
+        if (trimmed.startsWith(ProtocolResponses.HEAP_PREFIX)) {
+            val heapStr = trimmed.substringAfter(ProtocolResponses.HEAP_PREFIX).trim()
+            val heap = heapStr.toLongOrNull() ?: 0L
+            return MarauderResponse.HeapInfo(heap)
+        }
+        
         // Check for command echo (lines starting with #)
         COMMAND_ECHO_PATTERN.find(trimmed)?.let {
             return MarauderResponse.RawOutput(it.groupValues[1])
