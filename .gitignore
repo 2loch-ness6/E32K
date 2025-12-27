@@ -6,3 +6,12 @@ esp32_marauder/.vscode/settings.json
 
 .gemini/
 gha-creds-*.json
+
+# Android build artifacts
+MarauderController/.gradle
+MarauderController/build
+MarauderController/app/build
+MarauderController/local.properties
+MarauderController/*.log
+MarauderController/*.err
+MarauderController/*.out
