@@ -1475,6 +1475,7 @@ void CommandLine::runCommand(String input) {
 
     // List APs
     if (ap_sw != -1) {
+      Serial.println("#Access Points");
       for (int i = 0; i < access_points->size(); i++) {
         String bssid_str = macToString(access_points->get(i).bssid);
         String security_str = wifi_scan_obj.security_type_to_string(access_points->get(i).sec);
@@ -1503,6 +1504,7 @@ void CommandLine::runCommand(String input) {
     }
     // List SSIDs
     else if (ss_sw != -1) {
+      Serial.println("#SSIDs");
       for (int i = 0; i < ssids->size(); i++) {
         if (ssids->get(i).selected) {
           Serial.println("[" + (String)i + "] " + ssids->get(i).essid + " (selected)");
@@ -1515,6 +1517,7 @@ void CommandLine::runCommand(String input) {
     }
     // List Stations
     else if (cl_sw != -1) {
+      Serial.println("#Stations");
       char sta_mac[] = "00:00:00:00:00:00";
       for (int x = 0; x < access_points->size(); x++) {
         Serial.println("[" + (String)x + "] " + access_points->get(x).essid + " " + (String)access_points->get(x).rssi + ":");
