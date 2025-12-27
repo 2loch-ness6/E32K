@@ -284,6 +284,26 @@ void CommandLine::runCommand(String input) {
     return;
   }
 
+  // Protocol commands for seamless communication
+  if (input.startsWith("version")) {
+    Serial.println("#VERSION:" + (String)MARAUDER_VERSION);
+    return;
+  }
+  
+  if (input.startsWith("hardware")) {
+    #ifdef HARDWARE_NAME
+      Serial.println("#HARDWARE:" + (String)HARDWARE_NAME);
+    #else
+      Serial.println("#HARDWARE:GENERIC_ESP32");
+    #endif
+    return;
+  }
+  
+  if (input.startsWith("heap")) {
+    Serial.println("#HEAP:" + (String)ESP.getFreeHeap());
+    return;
+  }
+
   // Stop Scan
   if (cmd_args.get(0) == STOPSCAN_CMD) {
     //if (wifi_scan_obj.currentScanMode == OTA_UPDATE) {
