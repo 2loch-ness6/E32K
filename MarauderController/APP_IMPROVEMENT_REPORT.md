@@ -42,6 +42,6 @@ The `MarauderController` Android application is currently in a functional but fr
 
 ## 5. Roadmap
 
-1.  **Phase 1 (Stabilization)**: Unit tests for Parser, `CommandQueue` implementation, Error surfacing.
-2.  **Phase 2 (Automation)**: "Live Scan" workflow, Auto-connect/Reconnect logic.
+1.  **Phase 1 (Stabilization) [DONE]**: Unit tests for Parser, `CommandQueue` implementation, Error surfacing.
+2.  **Phase 2 (Automation) [PARTIAL]**: "Live Scan" workflow [DONE], Auto-connect/Reconnect logic.
 3.  **Phase 3 (Polish)**: Material 3 visual polish, Themes, Onboarding wizard.
