@@ -3,6 +3,7 @@ package com.justcallmekoko.maraudercontroller.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.justcallmekoko.maraudercontroller.data.preferences.PreferencesManager
 import com.justcallmekoko.maraudercontroller.data.protocol.*
 import com.justcallmekoko.maraudercontroller.data.repository.MarauderRepository
 import com.justcallmekoko.maraudercontroller.data.serial.SerialConnectionManager
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
  * Main ViewModel for Marauder controller
  */
 class MarauderViewModel(
-    private val repository: MarauderRepository
+    private val repository: MarauderRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     
     // Connection state
@@ -208,16 +210,53 @@ class MarauderViewModel(
         _selectedTab.value = index
     }
     
+    // Theme management
+    fun setThemeMode(mode: PreferencesManager.ThemeMode) {
+        viewModelScope.launch {
+            preferencesManager.setThemeMode(mode)
+        }
+    }
+    
+    val themeModeFlow = preferencesManager.themeModeFlow
+    
+    // Preferences
+    fun setAutoConnect(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.setAutoConnect(enabled)
+        }
+    }
+    
+    val autoConnectFlow = preferencesManager.autoConnectFlow
+    
+    fun setGpsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.setGpsEnabled(enabled)
+        }
+    }
+    
+    val gpsEnabledFlow = preferencesManager.gpsEnabledFlow
+    
+    fun setBluetoothEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesManager.setBluetoothEnabled(enabled)
+        }
+    }
+    
+    val bluetoothEnabledFlow = preferencesManager.bluetoothEnabledFlow
+    
     override fun onCleared() {
         super.onCleared()
         repository.release()
     }
     
-    class Factory(private val repository: MarauderRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: MarauderRepository,
+        private val preferencesManager: PreferencesManager
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(MarauderViewModel::class.java)) {
-                return MarauderViewModel(repository) as T
+                return MarauderViewModel(repository, preferencesManager) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }
