@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Marauder Controller</string>
+    <string name="connection_status">Connection Status</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="scan_for_devices">Scan for Devices</string>
+    <string name="no_devices_found">No devices found</string>
+    <string name="device_connected">Device connected</string>
+    <string name="device_disconnected">Disconnected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connection_error">Connection error</string>
+    <string name="usb_permission_denied">USB permission denied</string>
+    
+    <!-- Tabs -->
+    <string name="tab_wifi">WiFi</string>
+    <string name="tab_attacks">Attacks</string>
+    <string name="tab_lists">Lists</string>
+    <string name="tab_settings">Settings</string>
+    
+    <!-- Scanning -->
+    <string name="scan_access_points">Scan Access Points</string>
+    <string name="scan_stations">Scan Stations</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="scanning">Scanning...</string>
+    
+    <!-- Attacks -->
+    <string name="deauth_attack">Deauth Attack</string>
+    <string name="beacon_spam">Beacon Spam</string>
+    <string name="probe_attack">Probe Attack</string>
+    <string name="rick_roll">Rick Roll</string>
+    <string name="ap_spam">AP Spam</string>
+    <string name="mimic_attack">Mimic Attack</string>
+    <string name="start_attack">Start Attack</string>
+    <string name="stop_attack">Stop Attack</string>
+    
+    <!-- Lists -->
+    <string name="access_points">Access Points</string>
+    <string name="stations">Stations</string>
+    <string name="ssids">SSIDs</string>
+    <string name="select_all">Select All</string>
+    <string name="deselect_all">Deselect All</string>
+    <string name="clear">Clear</string>
+    <string name="add_ssid">Add SSID</string>
+    <string name="generate_random">Generate Random</string>
+    
+    <!-- Settings -->
+    <string name="channel">Channel</string>
+    <string name="device_info">Device Info</string>
+    <string name="gps_data">GPS Data</string>
+    <string name="reboot_device">Reboot Device</string>
+    <string name="terminal">Terminal</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="refresh">Refresh</string>
+    <string name="save">Save</string>
+    <string name="send">Send</string>
+</resources>
