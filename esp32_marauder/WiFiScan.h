@@ -51,6 +51,7 @@
 #ifdef HAS_GPS
   #include "GpsInterface.h"
 #endif
+#include "BinaryInterface.h"
 #include "settings.h"
 #include "Assets.h"
 #ifdef HAS_FLIPPER_LED
@@ -199,6 +200,7 @@ extern EvilPortal evil_portal_obj;
   extern GpsInterface gps_obj;
 #endif
 extern Buffer buffer_obj;
+extern BinaryInterface binary_obj;
 #ifdef HAS_BATTERY
   extern BatteryInterface battery_obj;
 #endif

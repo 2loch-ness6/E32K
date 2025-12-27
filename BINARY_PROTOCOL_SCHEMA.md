@@ -1,4 +1,4 @@
-# Marauder Binary Protocol Schema (v1.0)
+# Marauder Binary Protocol Schema (v1.1)
 
 This document defines the binary communication protocol between the ESP32 Marauder firmware and the Android Controller.
 
@@ -76,7 +76,25 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
 
 ---
 
-## Response Codes
+## Response & Data Codes
 *   `RESP_ACK` (0x00): Command accepted.
 *   `RESP_NACK` (0x01): Command failed or invalid.
 *   `RESP_PONG` (0x02): Pong response.
+*   `RESP_SCAN_DATA` (0x20): Generic Data Container.
+
+### `RESP_SCAN_DATA` Payload Structure
+| Offset | Type | Description |
+| :--- | :--- | :--- |
+| 0 | Byte | **Data Type** (0x01=AP, 0x02=Station) |
+| 1 | N Bytes | **Data Object** (See definitions below) |
+
+#### Data Object: Access Point (Type 0x01)
+*   **Size:** Fixed or Variable (Currently treating as fixed for MVP)
+*   Structure:
+    *   `Index` (1 Byte)
+    *   `RSSI` (1 Byte, signed)
+    *   `Channel` (1 Byte)
+    *   `MacAddr` (6 Bytes)
+    *   `SSID` (Variable, null-terminated or length-prefixed) - *Implementation Note: For MVP, maybe send raw string or simplify.*
+
+**(To be expanded as implementation matures)**

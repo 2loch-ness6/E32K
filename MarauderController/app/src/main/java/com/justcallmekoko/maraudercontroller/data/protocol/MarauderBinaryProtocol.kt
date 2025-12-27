@@ -23,6 +23,7 @@ object MarauderBinaryProtocol {
     const val RESP_ACK: Byte = 0x00
     const val RESP_NACK: Byte = 0x01
     const val RESP_PONG: Byte = 0x02
+    const val RESP_SCAN_DATA: Byte = 0x20.toByte()
     
     data class BinaryPacket(
         val cmd: Byte,

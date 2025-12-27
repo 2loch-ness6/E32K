@@ -5966,6 +5966,27 @@ void WiFiScan::apSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
       if (!in_list) {
       
         delay(random(0, 10));
+
+        // --- BINARY PROTOCOL HOOK ---
+        uint8_t ssid_len_bin = snifferPacket->payload[37];
+        if (ssid_len_bin > 32) ssid_len_bin = 32; 
+        
+        uint8_t packetLen = 10 + ssid_len_bin;
+        uint8_t* packetData = (uint8_t*)malloc(packetLen);
+        
+        if (packetData) {
+            packetData[0] = 0x01; // Type: AP
+            packetData[1] = snifferPacket->rx_ctrl.rssi;
+            packetData[2] = snifferPacket->rx_ctrl.channel;
+            memcpy(&packetData[3], &snifferPacket->payload[10], 6); // MAC
+            packetData[9] = ssid_len_bin;
+            memcpy(&packetData[10], &snifferPacket->payload[38], ssid_len_bin); // SSID
+            
+            binary_obj.sendResponse(RESP_SCAN_DATA, packetData, packetLen);
+            free(packetData);
+        }
+        // ----------------------------
+
         Serial.print(F("RSSI: "));
         Serial.print(snifferPacket->rx_ctrl.rssi);
         Serial.print(F(" Ch: "));

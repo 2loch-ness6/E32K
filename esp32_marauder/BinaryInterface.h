@@ -11,10 +11,11 @@ class BinaryInterface {
     void main(uint32_t currentTime);
     bool isUpdateMode();
     bool isPending();
+    void sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len);
     
   private:
     void handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len);
-    void sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len);
+    // void sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len); // Moved to public
     
     // Protocol Constants
     const uint8_t START_BYTE = 0xA5;
@@ -33,6 +34,7 @@ class BinaryInterface {
     const uint8_t RESP_ACK = 0x00;
     const uint8_t RESP_NACK = 0x01;
     const uint8_t RESP_PONG = 0x02;
+    const uint8_t RESP_SCAN_DATA = 0x20;
 
     // State machine
     enum State {
