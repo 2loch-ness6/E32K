@@ -11,7 +11,11 @@ gha-creds-*.json
 MarauderController/.gradle
 MarauderController/build
 MarauderController/app/build
+MarauderController/usb-serial-for-android/build
 MarauderController/local.properties
 MarauderController/*.log
 MarauderController/*.err
 MarauderController/*.out
+
+# Extracted usb-serial-for-android source (local copy is in MarauderController)
+usb-serial-for-android-3.10.0/

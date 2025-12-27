@@ -84,8 +84,8 @@ dependencies {
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     
-    // USB Serial
-    implementation("com.github.mik3y:usb-serial-for-android:v3.7.0")
+    // USB Serial - Local module
+    implementation(project(":usb-serial-for-android"))
     
     // Datastore
     implementation("androidx.datastore:datastore-preferences:1.0.0")

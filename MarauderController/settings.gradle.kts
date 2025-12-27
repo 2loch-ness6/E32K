@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MarauderController"
 include(":app")
+include(":usb-serial-for-android")
