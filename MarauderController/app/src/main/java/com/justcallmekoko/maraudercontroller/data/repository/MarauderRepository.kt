@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeoutOrNull
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -491,6 +492,14 @@ class MarauderRepository(context: Context) {
 
     fun stopScan() {
         scope.launch { stopScanSuspend() }
+    }
+
+    fun stopAttack() {
+        stopScan()
+    }
+
+    fun clearTerminal() {
+        _terminalOutput.value = emptyList()
     }
     
     private suspend fun listAccessPointsSuspend() {

@@ -35,6 +35,12 @@ class MarauderViewModel(
     val currentChannel: StateFlow<Int> = repository.currentChannel
     val fileList: StateFlow<List<MarauderRepository.FileEntry>> = repository.fileList
     
+    // Preferences
+    val themeModeFlow: Flow<PreferencesManager.ThemeMode> = preferencesManager.themeModeFlow
+    val autoConnectFlow: Flow<Boolean> = preferencesManager.autoConnectFlow
+    val gpsEnabledFlow: Flow<Boolean> = preferencesManager.gpsEnabledFlow
+    val bluetoothEnabledFlow: Flow<Boolean> = preferencesManager.bluetoothEnabledFlow
+
     // UI state
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab: StateFlow<Int> = _selectedTab.asStateFlow()
@@ -61,6 +67,48 @@ class MarauderViewModel(
     val selectedAccessPointsCount: StateFlow<Int> = accessPoints.map { 
         it.count { ap -> ap.selected } 
     }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    // UI operations
+    fun toggleTerminal() {
+        _showTerminal.value = !_showTerminal.value
+    }
+
+    fun selectTab(tab: Int) {
+        _selectedTab.value = tab
+    }
+
+    fun refreshDeviceInfo() {
+        repository.getDeviceInfo()
+    }
+
+    // Preferences operations
+    fun setThemeMode(mode: PreferencesManager.ThemeMode) {
+        viewModelScope.launch { preferencesManager.setThemeMode(mode) }
+    }
+
+    fun setAutoConnect(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setAutoConnect(enabled) }
+    }
+
+    fun setGpsEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setGpsEnabled(enabled) }
+    }
+
+    fun setBluetoothEnabled(enabled: Boolean) {
+        viewModelScope.launch { preferencesManager.setBluetoothEnabled(enabled) }
+    }
+
+    fun reboot() {
+        repository.reboot()
+    }
+
+    fun stopAttack() {
+        repository.stopAttack()
+    }
+
+    fun clearTerminal() {
+        repository.clearTerminal()
+    }
     
     // Connection management
     fun findDevices() = repository.findDevices()

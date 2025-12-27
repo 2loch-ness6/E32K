@@ -10,14 +10,19 @@ SKETCH_NAME="esp32_marauder.ino"
 FQBN="esp32:esp32:esp32" # Generic ESP32, can be customized via args
 
 # Check for arduino-cli
-if ! command -v arduino-cli &> /dev/null;
-then
+ARDUINO_CLI="arduino-cli"
+
+if [ -f "../../bin/arduino-cli" ]; then
+    ARDUINO_CLI="../../bin/arduino-cli"
+elif [ -f "../bin/arduino-cli" ]; then
+    ARDUINO_CLI="../bin/arduino-cli"
+elif ! command -v arduino-cli &> /dev/null; then
     echo "Error: arduino-cli is not installed or not in PATH."
     echo "Please install it: https://arduino.github.io/arduino-cli/latest/installation/"
     exit 1
 fi
 
-echo "Found arduino-cli. Preparing build..."
+echo "Found arduino-cli at $ARDUINO_CLI. Preparing build..."
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
@@ -33,16 +38,16 @@ sed -i 's/\/\/#define ESP32_LDDB/#define ESP32_LDDB/g' "$CONFIG_FILE"
 # Note: In C++, typically you'd just ensure one is active. The file has them commented out by default.
 
 # Install core if needed (this might require internet)
-if ! arduino-cli core list | grep -q "esp32:esp32";
+if ! $ARDUINO_CLI core list | grep -q "esp32:esp32";
 then
     echo "Installing ESP32 core..."
-    arduino-cli core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-    arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+    $ARDUINO_CLI core update-index --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+    $ARDUINO_CLI core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 fi
 
 # Build
 echo "Compiling firmware..."
-arduino-cli compile --build-property "build.partitions=huge_app" --build-property "upload.maximum_size=3145728" \
+$ARDUINO_CLI compile --build-property "build.partitions=huge_app" --build-property "upload.maximum_size=3145728" \
     --fqbn "$FQBN" \
     --libraries "$FIRMWARE_SRC/libraries" --library "/root/Arduino/libraries" \
     --build-path "$BUILD_DIR" \
