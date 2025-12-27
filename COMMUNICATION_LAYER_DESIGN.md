@@ -334,10 +334,10 @@ void loop() {
 
 **Key Points:**
 - `binary_obj.main()` called **before** `cli_obj.main()`
-- Binary interface reads and consumes serial data to detect binary packets
-- If a valid binary packet is detected, it's consumed by the binary handler
-- Bytes that are not part of a recognized binary packet are not forwarded to the CLI and may be discarded
-- Text and binary protocols are supported by separate handlers, but they should not arbitrarily interleave on the same serial byte stream
+- Binary interface uses Serial.peek() in WAIT_START to detect binary packets without consuming data
+- If a binary packet start byte (0xA5) is detected, the packet is consumed by the binary handler
+- Non-binary bytes are left in the serial buffer for the CLI handler to process
+- Both text and binary protocols can coexist and safely interleave on the same serial connection
 
 ### Android Data Flow
 
@@ -405,12 +405,12 @@ val response = serialManager.sendBinaryCommandAndWait(
 
 ## Protocol Negotiation
 
-The system uses implicit protocol detection, with the binary parser owning the serial stream:
+The system uses implicit protocol detection with safe coexistence of both protocols:
 
-1. **Binary Priority:** Incoming serial bytes are first consumed by the binary state machine; when a `START_BYTE (0xA5)` is seen, a binary packet parse is initiated.
-2. **Non‑binary Bytes:** While the binary parser is waiting for a start byte, any bytes that are not `START_BYTE (0xA5)` are consumed and ignored by the binary interface and are **not** forwarded to the text protocol handler.
-3. **Text Protocol Usage:** Reliable text‑mode communication requires either a separate connection or phases where no binary traffic is present; arbitrarily interleaving text with binary packets can result in text data being dropped.
-4. **Concurrent Operation (with limitations):** Both parsers can be active, but because the binary parser consumes the underlying stream first, only well‑framed traffic that respects the binary protocol can be safely mixed without data loss.
+1. **Binary Detection:** The binary parser uses `Serial.peek()` in WAIT_START state to inspect incoming bytes without consuming them.
+2. **Binary Packet Handling:** When a `START_BYTE (0xA5)` is detected, the binary parser consumes the byte and processes the complete binary packet.
+3. **Text Protocol Passthrough:** Bytes that are not binary packet start markers are left in the serial buffer for the CLI text protocol handler to process.
+4. **Seamless Coexistence:** Both parsers can safely handle interleaved text and binary data without data loss, as the binary parser only consumes data it recognizes.
 
 ## Error Handling
 

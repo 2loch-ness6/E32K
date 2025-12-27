@@ -23,13 +23,25 @@ bool BinaryInterface::isPending() {
 void BinaryInterface::main(uint32_t currentTime) {
   // State machine for binary protocol parsing
   while (Serial.available() > 0) {
-    uint8_t byte = Serial.read();
+    uint8_t byte;
+    
+    // In WAIT_START state, use peek() to avoid consuming non-binary data
+    if (currentState == WAIT_START) {
+      byte = Serial.peek();
+    } else {
+      byte = Serial.read();
+    }
     
     switch (currentState) {
       case WAIT_START:
         if (byte == START_BYTE) {
+          // Consume the start byte now that we know it's binary
+          Serial.read();
           currentState = WAIT_CMD;
           payloadIndex = 0;
+        } else {
+          // Not a binary packet start - leave byte in buffer for CLI
+          break;
         }
         break;
         
