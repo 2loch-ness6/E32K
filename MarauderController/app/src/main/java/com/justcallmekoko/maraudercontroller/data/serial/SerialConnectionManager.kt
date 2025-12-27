@@ -12,6 +12,7 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.hoho.android.usbserial.util.SerialInputOutputManager
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,6 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
@@ -43,6 +47,11 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     val receivedData: StateFlow<String> = _receivedData.asStateFlow()
     
     private val readBuffer = StringBuilder()
+    
+    // Command Queue Synchronization
+    private val sendMutex = Mutex()
+    private var activeCommandResponse: CompletableDeferred<Boolean>? = null
+    private var activeResponsePattern: Regex? = null
     
     companion object {
         private const val ACTION_USB_PERMISSION = "com.justcallmekoko.maraudercontroller.USB_PERMISSION"
@@ -188,20 +197,55 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     }
     
     /**
-     * Send command to device
+     * Send command to device (fire and forget, serialized)
      */
     fun sendCommand(command: String) {
         scope.launch {
-            try {
-                val port = serialPort ?: throw IOException("Not connected")
-                val data = "$command\n".toByteArray()
-                port.write(data, WRITE_TIMEOUT)
-            } catch (e: Exception) {
-                _connectionState.value = ConnectionState.Error("Send failed: ${e.message}")
+            sendMutex.withLock {
+                try {
+                    val port = serialPort ?: throw IOException("Not connected")
+                    val data = "$command\n".toByteArray()
+                    port.write(data, WRITE_TIMEOUT)
+                } catch (e: Exception) {
+                    _connectionState.value = ConnectionState.Error("Send failed: ${e.message}")
+                }
             }
         }
     }
     
+    /**
+     * Send command and wait for specific response pattern
+     * Returns true if response matched, false on timeout or error
+     */
+    suspend fun sendCommandAndWait(command: String, responsePattern: Regex, timeoutMs: Long = 2000L): Boolean {
+        return sendMutex.withLock {
+            try {
+                val port = serialPort ?: return@withLock false
+                
+                // Setup waiter
+                val deferred = CompletableDeferred<Boolean>()
+                activeResponsePattern = responsePattern
+                activeCommandResponse = deferred
+                
+                // Send
+                val data = "$command\n".toByteArray()
+                port.write(data, WRITE_TIMEOUT)
+                
+                // Wait
+                withTimeoutOrNull(timeoutMs) {
+                    deferred.await()
+                } ?: false
+                
+            } catch (e: Exception) {
+                _connectionState.value = ConnectionState.Error("SendWait failed: ${e.message}")
+                false
+            } finally {
+                activeCommandResponse = null
+                activeResponsePattern = null
+            }
+        }
+    }
+
     /**
      * Send raw data to device
      */
@@ -226,9 +270,20 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
                 // Emit complete lines
                 var newlineIndex = readBuffer.indexOf('\n')
                 while (newlineIndex != -1) {
-                    val line = readBuffer.substring(0, newlineIndex)
+                    val line = readBuffer.substring(0, newlineIndex).trim()
                     readBuffer.delete(0, newlineIndex + 1)
-                    _receivedData.value = line
+                    
+                    if (line.isNotEmpty()) {
+                        _receivedData.value = line
+                        
+                        // Check for active waiter
+                        activeResponsePattern?.let { pattern ->
+                            if (pattern.containsMatchIn(line)) {
+                                activeCommandResponse?.complete(true)
+                            }
+                        }
+                    }
+                    
                     newlineIndex = readBuffer.indexOf('\n')
                 }
             } catch (e: Exception) {

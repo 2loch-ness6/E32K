@@ -225,7 +225,12 @@ class MarauderRepository(context: Context) {
     }
     
     fun stopScan() {
-        sendCommand(MarauderCommands.STOP_SCAN)
+        scope.launch {
+            addToTerminal("> ${MarauderCommands.STOP_SCAN}")
+            // Wait for "Stopping" or "Stopped" to ensure scan is done before allowing new commands
+            val pattern = Regex("Stopping|Stopped", RegexOption.IGNORE_CASE)
+            serialManager.sendCommandAndWait(MarauderCommands.STOP_SCAN, pattern)
+        }
     }
     
     fun listAccessPoints() {

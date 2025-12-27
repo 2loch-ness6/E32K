@@ -1,21 +1,25 @@
 package com.justcallmekoko.maraudercontroller.data.protocol
 
-import android.util.Log
+import com.justcallmekoko.maraudercontroller.utils.ParserLogger
+import com.justcallmekoko.maraudercontroller.utils.AndroidParserLogger
 
 /**
  * Parses serial output from ESP32 Marauder device
  */
-class MarauderProtocolParser {
+class MarauderProtocolParser(
+    private val logger: ParserLogger = AndroidParserLogger()
+) {
     
     companion object {
         private const val TAG = "MarauderParser"
         
         // Response patterns
+        private val ANSI_PATTERN = Regex("""\u001B\[[;\d]*[mK]""")
         private val PROMPT_PATTERN = Regex("^>\\s*$")
         private val COMMAND_ECHO_PATTERN = Regex("^#(.+)$")
-        private val AP_LINE_PATTERN = Regex("""^\[(\d+)\]\s+(.+?)\s+\((.+?)\)\s+Ch:\s*(\d+)\s+RSSI:\s*(-?\d+)\s+(.+)$""")
-        private val STATION_LINE_PATTERN = Regex("""^\[(\d+)\]\s+(.+?)\s+RSSI:\s*(-?\d+)\s+Ch:\s*(\d+)\s+Pkts:\s*(\d+)""")
-        private val SSID_LINE_PATTERN = Regex("""^\[(\d+)\]\s+(.+?)(?:\s+Ch:\s*(\d+))?$""")
+        private val AP_LINE_PATTERN = Regex("""\[(\d+)\]\s*(.+?)\s*\((.+?)\)\s*Ch:\s*(\d+)\s*RSSI:\s*(-?\d+)\s*(.+)""")
+        private val STATION_LINE_PATTERN = Regex("""\[(\d+)\]\s*(.+?)\s*RSSI:\s*(-?\d+)\s*Ch:\s*(\d+)\s*Pkts:\s*(\d+)""")
+        private val SSID_LINE_PATTERN = Regex("""\[(\d+)\]\s*(.+?)(?:\s*Ch:\s*(\d+))?""")
         private val SCAN_START_PATTERN = Regex("""Starting\s+(.+?)\s+scan""", RegexOption.IGNORE_CASE)
         private val SCAN_STOP_PATTERN = Regex("""Stopping\s+(.+?)""", RegexOption.IGNORE_CASE)
         private val ATTACK_START_PATTERN = Regex("""Starting\s+(.+?)\s+attack""", RegexOption.IGNORE_CASE)
@@ -32,12 +36,16 @@ class MarauderProtocolParser {
     }
     
     private val currentGpsData = GpsData()
+
+    private fun stripAnsi(text: String): String {
+        return text.replace(ANSI_PATTERN, "").replace(Regex("""\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])"""), "")
+    }
     
     /**
      * Parse a line of serial output
      */
     fun parseLine(line: String): MarauderResponse {
-        val trimmed = line.trim()
+        val trimmed = stripAnsi(line).trim()
         
         if (trimmed.isEmpty()) {
             return MarauderResponse.RawOutput(line)
@@ -100,7 +108,8 @@ class MarauderProtocolParser {
         val aps = mutableListOf<AccessPoint>()
         
         for (line in lines) {
-            val match = AP_LINE_PATTERN.find(line.trim()) ?: continue
+            val cleanLine = stripAnsi(line).trim()
+            val match = AP_LINE_PATTERN.find(cleanLine) ?: continue
             
             try {
                 val index = match.groupValues[1].toInt()
@@ -110,7 +119,7 @@ class MarauderProtocolParser {
                 val rssi = match.groupValues[5].toInt()
                 val encryption = match.groupValues[6].trim()
                 
-                val selected = line.contains("*") || line.contains("(*)") 
+                val selected = cleanLine.contains("*") || cleanLine.contains("(*)") 
                 
                 aps.add(
                     AccessPoint(
@@ -123,7 +132,7 @@ class MarauderProtocolParser {
                     )
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse AP line: $line", e)
+                logger.w(TAG, "Failed to parse AP line: $line", e)
             }
         }
         
@@ -137,7 +146,8 @@ class MarauderProtocolParser {
         val stations = mutableListOf<Station>()
         
         for (line in lines) {
-            val match = STATION_LINE_PATTERN.find(line.trim()) ?: continue
+            val cleanLine = stripAnsi(line).trim()
+            val match = STATION_LINE_PATTERN.find(cleanLine) ?: continue
             
             try {
                 val mac = match.groupValues[2].trim()
@@ -154,7 +164,7 @@ class MarauderProtocolParser {
                     )
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse station line: $line", e)
+                logger.w(TAG, "Failed to parse station line: $line", e)
             }
         }
         
@@ -168,12 +178,13 @@ class MarauderProtocolParser {
         val ssids = mutableListOf<SSID>()
         
         for (line in lines) {
-            val match = SSID_LINE_PATTERN.find(line.trim()) ?: continue
+            val cleanLine = stripAnsi(line).trim()
+            val match = SSID_LINE_PATTERN.find(cleanLine) ?: continue
             
             try {
                 val name = match.groupValues[2].trim()
                 val channel = match.groupValues[3].toIntOrNull() ?: 0
-                val selected = line.contains("*") || line.contains("(*)")
+                val selected = cleanLine.contains("*") || cleanLine.contains("(*)")
                 
                 ssids.add(
                     SSID(
@@ -183,7 +194,7 @@ class MarauderProtocolParser {
                     )
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to parse SSID line: $line", e)
+                logger.w(TAG, "Failed to parse SSID line: $line", e)
             }
         }
         
