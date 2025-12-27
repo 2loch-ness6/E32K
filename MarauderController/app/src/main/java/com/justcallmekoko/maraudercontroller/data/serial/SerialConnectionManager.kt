@@ -26,6 +26,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
+import com.justcallmekoko.maraudercontroller.data.protocol.MarauderBinaryProtocol
+import java.io.ByteArrayOutputStream
 
 /**
  * Manages USB serial connection to ESP32 Marauder device
@@ -47,6 +49,13 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     val receivedData: StateFlow<String> = _receivedData.asStateFlow()
     
     private val readBuffer = StringBuilder()
+
+    // Binary Protocol State
+    private enum class ParserState { IDLE, WAIT_CMD, WAIT_LEN, WAIT_PAYLOAD, WAIT_END }
+    private var parserState = ParserState.IDLE
+    private var binaryCmd: Byte = 0
+    private var binaryLen: Int = 0
+    private val binaryPayload = ByteArrayOutputStream()
     
     // Command Queue Synchronization
     private val sendMutex = Mutex()
@@ -284,33 +293,84 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     override fun onNewData(data: ByteArray) {
         scope.launch {
             try {
-                val text = String(data, Charsets.UTF_8)
-                readBuffer.append(text)
-                
-                // Emit complete lines
-                var newlineIndex = readBuffer.indexOf('\n')
-                while (newlineIndex != -1) {
-                    val line = readBuffer.substring(0, newlineIndex).trim()
-                    readBuffer.delete(0, newlineIndex + 1)
-                    
-                    if (line.isNotEmpty()) {
-                        _receivedData.value = line
-                        
-                        // Check for active waiter
-                        activeResponsePattern?.let { pattern ->
-                            if (pattern.containsMatchIn(line)) {
-                                activeCommandResponse?.complete(true)
-                            }
-                        }
-                    }
-                    
-                    newlineIndex = readBuffer.indexOf('\n')
+                for (byte in data) {
+                    processByte(byte)
                 }
             } catch (e: Exception) {
                 // Log error
             }
         }
     }
+
+    private fun processByte(byte: Byte) {
+        when (parserState) {
+            ParserState.IDLE -> {
+                if (byte == MarauderBinaryProtocol.START_BYTE) {
+                    parserState = ParserState.WAIT_CMD
+                } else {
+                    // Text data
+                    val char = byte.toInt().toChar()
+                    readBuffer.append(char)
+                    if (char == '\n') {
+                        val line = readBuffer.toString().trim()
+                        readBuffer.setLength(0) // Clear buffer
+                        if (line.isNotEmpty()) {
+                            _receivedData.value = line
+                            
+                            // Check for active waiter (Text mode)
+                            activeResponsePattern?.let { pattern ->
+                                if (pattern.containsMatchIn(line)) {
+                                    activeCommandResponse?.complete(true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ParserState.WAIT_CMD -> {
+                binaryCmd = byte
+                parserState = ParserState.WAIT_LEN
+            }
+            ParserState.WAIT_LEN -> {
+                binaryLen = byte.toInt() and 0xFF
+                binaryPayload.reset()
+                if (binaryLen > 0) {
+                    parserState = ParserState.WAIT_PAYLOAD
+                } else {
+                    parserState = ParserState.WAIT_END
+                }
+            }
+            ParserState.WAIT_PAYLOAD -> {
+                binaryPayload.write(byte.toInt())
+                if (binaryPayload.size() == binaryLen) {
+                    parserState = ParserState.WAIT_END
+                }
+            }
+            ParserState.WAIT_END -> {
+                if (byte == MarauderBinaryProtocol.END_BYTE) {
+                    // Valid Packet Received
+                    handleBinaryPacket(binaryCmd, binaryPayload.toByteArray())
+                } else {
+                    // Invalid, discard or treat as text? 
+                    // For now, reset to idle.
+                }
+                parserState = ParserState.IDLE
+            }
+        }
+    }
+
+    private fun handleBinaryPacket(cmd: Byte, payload: ByteArray) {
+        // Handle responses (ACK/NACK/PONG)
+        // For now, if we have an active binary waiter, we could signal it.
+        // We might need a separate Flow for binary events if the UI needs them.
+        if (cmd == MarauderBinaryProtocol.RESP_ACK || cmd == MarauderBinaryProtocol.RESP_PONG) {
+             // For simplicity, we assume binary commands are synchronous enough 
+             // or we map them to the same response mechanism if needed.
+             // Currently sendCommandAndWait is text-based. 
+             // We can extend it or just log for now.
+        }
+    }
+
     
     override fun onRunError(e: Exception) {
         scope.launch {

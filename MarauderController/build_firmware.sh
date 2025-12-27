@@ -22,6 +22,16 @@ echo "Found arduino-cli. Preparing build..."
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
+# Configure configs.h for ESP32_LDDB (NodeMCU/Wemos)
+echo "Configuring firmware for ESP32_LDDB..."
+CONFIG_FILE="$FIRMWARE_SRC/configs.h"
+
+# Uncomment ESP32_LDDB
+sed -i 's/\/\/#define ESP32_LDDB/#define ESP32_LDDB/g' "$CONFIG_FILE"
+
+# Comment out others (optional, but good practice if multiple were somehow enabled)
+# Note: In C++, typically you'd just ensure one is active. The file has them commented out by default.
+
 # Install core if needed (this might require internet)
 if ! arduino-cli core list | grep -q "esp32:esp32";
 then
