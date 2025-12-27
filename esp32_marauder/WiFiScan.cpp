@@ -2701,6 +2701,46 @@ String WiFiScan::security_int_to_string(int security_type) {
   return authtype;
 }
 
+String WiFiScan::security_type_to_string(uint8_t security_type) {
+  // Convert internal security type constants to short strings for list output
+  String authtype = "";
+
+  switch (security_type) {
+    case WIFI_SECURITY_OPEN:
+      authtype = "Open";
+      break;
+    case WIFI_SECURITY_WEP:
+      authtype = "WEP";
+      break;
+    case WIFI_SECURITY_WPA:
+      authtype = "WPA";
+      break;
+    case WIFI_SECURITY_WPA2:
+      authtype = "WPA2";
+      break;
+    case WIFI_SECURITY_WPA3:
+      authtype = "WPA3";
+      break;
+    case WIFI_SECURITY_WPA_WPA2_MIXED:
+      authtype = "WPA/WPA2";
+      break;
+    case WIFI_SECURITY_WPA2_ENTERPRISE:
+      authtype = "WPA2-E";
+      break;
+    case WIFI_SECURITY_WPA3_ENTERPRISE:
+      authtype = "WPA3-E";
+      break;
+    case WIFI_SECURITY_WAPI:
+      authtype = "WAPI";
+      break;
+    default:
+      authtype = "Unknown";
+      break;
+  }
+
+  return authtype;
+}
+
 void WiFiScan::clearMacHistory() {
     for (int i = 0; i < mac_history_len; ++i) {
         memset(mac_history[i].bytes, 0, sizeof(mac_history[i].bytes));

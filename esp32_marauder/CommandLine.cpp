@@ -1476,12 +1476,16 @@ void CommandLine::runCommand(String input) {
     // List APs
     if (ap_sw != -1) {
       for (int i = 0; i < access_points->size(); i++) {
+        String bssid_str = macToString(access_points->get(i).bssid);
+        String security_str = wifi_scan_obj.security_type_to_string(access_points->get(i).sec);
+        
         if (access_points->get(i).selected) {
-          Serial.println("[" + (String)i + "][CH:" + (String)access_points->get(i).channel + "] " + access_points->get(i).essid + " " + (String)access_points->get(i).rssi + " (selected)");
+          Serial.println("[" + (String)i + "] " + access_points->get(i).essid + " (" + bssid_str + ") Ch: " + (String)access_points->get(i).channel + " RSSI: " + (String)access_points->get(i).rssi + " " + security_str + " (*)");
           count_selected += 1;
         } 
-        else
-          Serial.println("[" + (String)i + "][CH:" + (String)access_points->get(i).channel + "] " + access_points->get(i).essid + " " + (String)access_points->get(i).rssi);
+        else {
+          Serial.println("[" + (String)i + "] " + access_points->get(i).essid + " (" + bssid_str + ") Ch: " + (String)access_points->get(i).channel + " RSSI: " + (String)access_points->get(i).rssi + " " + security_str);
+        }
       }
       this->showCounts(count_selected);
     }

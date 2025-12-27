@@ -743,6 +743,7 @@ class WiFiScan
     void renderPacketRate();
     void displayAnalyzerString(String str);
     String security_int_to_string(int security_type);
+    String security_type_to_string(uint8_t security_type);
     char* stringToChar(String string);
     void RunSetup();
     int clearSSIDs();
