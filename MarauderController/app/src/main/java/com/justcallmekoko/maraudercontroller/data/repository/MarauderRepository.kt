@@ -477,17 +477,28 @@ class MarauderRepository(context: Context) {
     // Convenience methods for common commands
     
     fun scanAp(continuous: Boolean = false, timeout: Int? = null) {
-        sendCommand(MarauderCommands.buildScanApCommand(continuous, timeout))
+        addToTerminal("> Binary: SCAN_AP")
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_SCAN_AP, 0, ByteArray(0)
+        )
+        serialManager.sendBinaryCommand(packet)
     }
     
     fun scanStation(continuous: Boolean = false) {
-        sendCommand(if (continuous) "${MarauderCommands.SCAN_STA} -c" else MarauderCommands.SCAN_STA)
+        addToTerminal("> Binary: SCAN_STA")
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_SCAN_STA, 0, ByteArray(0)
+        )
+        serialManager.sendBinaryCommand(packet)
     }
     
     private suspend fun stopScanSuspend() {
-        addToTerminal("> ${MarauderCommands.STOP_SCAN}")
-        val pattern = Regex("Stopping|Stopped", RegexOption.IGNORE_CASE)
-        serialManager.sendCommandAndWait(MarauderCommands.STOP_SCAN, pattern)
+        addToTerminal("> Binary: STOP_SCAN")
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_STOP_SCAN, 0, ByteArray(0)
+        )
+        // For stop, we might want to wait for ACK
+        serialManager.sendBinaryCommandAndWait(packet)
     }
 
     fun stopScan() {
@@ -499,6 +510,13 @@ class MarauderRepository(context: Context) {
     }
     
     private suspend fun listAccessPointsSuspend() {
+        // List is still text-based in firmware for now, or we rely on binary stream updates?
+        // The prompt implies strict binary. But if firmware doesn't support binary LIST yet?
+        // Schema says CMD_FS_LIST is for files. There is no CMD_LIST_AP in binary schema yet.
+        // We rely on the streaming data from SCAN_AP.
+        // However, if we need to re-request the list, we might still need legacy text or add CMD_LIST_AP.
+        // For now, let's keep list text-based as it's not in the binary schema explicitly as a request-response 
+        // other than streaming.
         val cmd = MarauderCommands.buildListCommand(apList = true)
         addToTerminal("> $cmd")
         // Wait for prompt > which indicates list is done
@@ -694,7 +712,11 @@ class MarauderRepository(context: Context) {
     }
     
     fun reboot() {
-        sendCommand(MarauderCommands.REBOOT)
+        addToTerminal("> Binary: REBOOT")
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_REBOOT, 0, ByteArray(0)
+        )
+        serialManager.sendBinaryCommand(packet)
     }
     
     /**

@@ -6971,6 +6971,30 @@ void WiFiScan::beaconSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type
 
         else if (wifi_scan_obj.currentScanMode == WIFI_SCAN_AP) {
           delay(random(0, 10));
+          
+          // Binary Protocol RESP_SCAN_DATA (Type 0x01: AP)
+          uint8_t ssid_len = snifferPacket->payload[37];
+          if (ssid_len > 32) ssid_len = 32;
+          uint8_t bin_len = 11 + ssid_len;
+          uint8_t* bin_payload = new uint8_t[bin_len];
+          
+          bin_payload[0] = 0x01; // Type: AP
+          bin_payload[1] = (uint8_t)snifferPacket->rx_ctrl.rssi;
+          bin_payload[2] = (uint8_t)snifferPacket->rx_ctrl.channel;
+          memcpy(&bin_payload[3], &snifferPacket->payload[10], 6); // MAC
+          
+          // Auth (Privacy Bit in Capability Info at offset 34)
+          uint16_t capability = snifferPacket->payload[34] | (snifferPacket->payload[35] << 8);
+          bin_payload[9] = (capability & 0x0010) ? 1 : 0;
+          
+          bin_payload[10] = ssid_len;
+          if (ssid_len > 0) {
+            memcpy(&bin_payload[11], &snifferPacket->payload[38], ssid_len);
+          }
+          
+          binary_obj.sendResponse(RESP_SCAN_DATA, bin_payload, bin_len);
+          delete[] bin_payload;
+
           Serial.print(F("RSSI: "));
           Serial.print(snifferPacket->rx_ctrl.rssi);
           Serial.print(F(" Ch: "));
