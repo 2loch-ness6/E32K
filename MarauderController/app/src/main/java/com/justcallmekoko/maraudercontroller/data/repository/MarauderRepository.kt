@@ -497,10 +497,6 @@ class MarauderRepository(context: Context) {
     fun stopAttack() {
         stopScan()
     }
-
-    fun clearTerminal() {
-        _terminalOutput.value = emptyList()
-    }
     
     private suspend fun listAccessPointsSuspend() {
         val cmd = MarauderCommands.buildListCommand(apList = true)
