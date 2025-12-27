@@ -148,5 +148,10 @@ sealed class MarauderResponse {
     data class AttackStarted(val attackType: String) : MarauderResponse()
     data class AttackStopped(val attackType: String) : MarauderResponse()
     data class RawOutput(val line: String) : MarauderResponse()
+    // Protocol responses for seamless communication
+    data class VersionInfo(val version: String) : MarauderResponse()
+    data class HardwareInfo(val hardware: String) : MarauderResponse()
+    data class HeapInfo(val freeHeap: Long) : MarauderResponse()
+    data class DeviceVersionInfo(val version: String, val hardware: String, val freeHeap: Long) : MarauderResponse()
     object Prompt : MarauderResponse()
 }

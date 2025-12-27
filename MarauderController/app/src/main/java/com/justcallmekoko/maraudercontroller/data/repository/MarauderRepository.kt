@@ -146,6 +146,34 @@ class MarauderRepository(context: Context) {
                 _deviceInfo.value = response.info
             }
             
+            is MarauderResponse.VersionInfo -> {
+                // Update device info with version
+                val current = _deviceInfo.value ?: DeviceInfo()
+                _deviceInfo.value = current.copy(version = response.version)
+            }
+            
+            is MarauderResponse.HardwareInfo -> {
+                // Update device info with hardware
+                val current = _deviceInfo.value ?: DeviceInfo()
+                _deviceInfo.value = current.copy(hardware = response.hardware)
+            }
+            
+            is MarauderResponse.HeapInfo -> {
+                // Update device info with free heap
+                val current = _deviceInfo.value ?: DeviceInfo()
+                _deviceInfo.value = current.copy(freeHeap = response.freeHeap.toInt())
+            }
+            
+            is MarauderResponse.DeviceVersionInfo -> {
+                // Update device info with all version data
+                val current = _deviceInfo.value ?: DeviceInfo()
+                _deviceInfo.value = current.copy(
+                    version = response.version,
+                    hardware = response.hardware,
+                    freeHeap = response.freeHeap.toInt()
+                )
+            }
+            
             is MarauderResponse.GpsInfo -> {
                 _gpsData.value = response.gps
             }
@@ -379,6 +407,36 @@ class MarauderRepository(context: Context) {
             type.contains("mimic", ignoreCase = true) -> AttackType.MIMIC
             else -> null
         }
+    }
+    
+    /**
+     * Query device version from firmware
+     */
+    fun getDeviceVersion() {
+        sendCommand("version")
+    }
+    
+    /**
+     * Query device hardware type from firmware
+     */
+    fun getDeviceHardware() {
+        sendCommand("hardware")
+    }
+    
+    /**
+     * Query free heap from firmware
+     */
+    fun getDeviceHeap() {
+        sendCommand("heap")
+    }
+    
+    /**
+     * Query all device information (version, hardware, heap)
+     */
+    fun queryDeviceInfo() {
+        getDeviceVersion()
+        getDeviceHardware()
+        getDeviceHeap()
     }
     
     fun release() {
