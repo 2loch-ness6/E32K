@@ -19,6 +19,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -48,6 +51,9 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     private val _receivedData = MutableStateFlow<String>("")
     val receivedData: StateFlow<String> = _receivedData.asStateFlow()
     
+    private val _binaryEvents = kotlinx.coroutines.flow.MutableSharedFlow<MarauderBinaryProtocol.BinaryPacket>(extraBufferCapacity = 64)
+    val binaryEvents: kotlinx.coroutines.flow.SharedFlow<MarauderBinaryProtocol.BinaryPacket> = _binaryEvents.asSharedFlow()
+    
     private val readBuffer = StringBuilder()
 
     // Binary Protocol State
@@ -61,6 +67,9 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     private val sendMutex = Mutex()
     private var activeCommandResponse: CompletableDeferred<Boolean>? = null
     private var activeResponsePattern: Regex? = null
+    
+    private var activeBinaryResponse: CompletableDeferred<MarauderBinaryProtocol.BinaryPacket>? = null
+    private var activeBinaryCmd: Byte? = null
     
     companion object {
         private const val ACTION_USB_PERMISSION = "com.justcallmekoko.maraudercontroller.USB_PERMISSION"
@@ -288,6 +297,47 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
             }
         }
     }
+
+    /**
+     * Send binary command packet
+     */
+    fun sendBinaryCommand(packet: MarauderBinaryProtocol.BinaryPacket) {
+        sendRaw(packet.toBytes())
+    }
+
+    /**
+     * Send binary command and wait for response
+     */
+    suspend fun sendBinaryCommandAndWait(
+        packet: MarauderBinaryProtocol.BinaryPacket, 
+        timeoutMs: Long = 2000L
+    ): MarauderBinaryProtocol.BinaryPacket? {
+        return sendMutex.withLock {
+            try {
+                val port = serialPort ?: return@withLock null
+                
+                // Setup waiter
+                val deferred = CompletableDeferred<MarauderBinaryProtocol.BinaryPacket>()
+                activeBinaryResponse = deferred
+                activeBinaryCmd = packet.cmd
+                
+                // Send
+                port.write(packet.toBytes(), WRITE_TIMEOUT)
+                
+                // Wait
+                withTimeoutOrNull(timeoutMs) {
+                    deferred.await()
+                }
+                
+            } catch (e: Exception) {
+                _connectionState.value = ConnectionState.Error("SendWaitBin failed: ${e.message}")
+                null
+            } finally {
+                activeBinaryResponse = null
+                activeBinaryCmd = null
+            }
+        }
+    }
     
     // SerialInputOutputManager.Listener implementation
     override fun onNewData(data: ByteArray) {
@@ -360,14 +410,23 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     }
 
     private fun handleBinaryPacket(cmd: Byte, payload: ByteArray) {
-        // Handle responses (ACK/NACK/PONG)
-        // For now, if we have an active binary waiter, we could signal it.
-        // We might need a separate Flow for binary events if the UI needs them.
-        if (cmd == MarauderBinaryProtocol.RESP_ACK || cmd == MarauderBinaryProtocol.RESP_PONG) {
-             // For simplicity, we assume binary commands are synchronous enough 
-             // or we map them to the same response mechanism if needed.
-             // Currently sendCommandAndWait is text-based. 
-             // We can extend it or just log for now.
+        val packet = MarauderBinaryProtocol.BinaryPacket(cmd, payload.size, payload)
+        
+        // 1. Check for active waiter
+        if (activeBinaryResponse != null) {
+            // If we are waiting for a specific command response (e.g. ACK/NACK for a sent CMD)
+            // The protocol might define that CMD_PING receives RESP_PONG, etc.
+            // Or we might just accept any packet if we are waiting.
+            // For now, let's complete if it matches expectation or if we are generic.
+            
+            // Simple logic: If waiting, deliver it.
+            // The caller is responsible for checking if the packet is what they wanted.
+            activeBinaryResponse?.complete(packet)
+        }
+        
+        // 2. Always emit to Flow for observers
+        scope.launch {
+            _binaryEvents.emit(packet)
         }
     }
 
