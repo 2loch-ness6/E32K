@@ -5,6 +5,28 @@
 #include <Update.h>
 #include "configs.h"
 
+// Protocol Constants
+#define START_BYTE 0xA5
+#define END_BYTE 0x5A
+
+#define CMD_PING 0x00
+#define CMD_SCAN_AP 0x01
+#define CMD_SCAN_STA 0x02
+#define CMD_STOP_SCAN 0x03
+#define CMD_ATTACK 0x04
+#define CMD_GET_CONFIG 0x05
+#define CMD_REBOOT 0x06
+#define CMD_UPDATE_START 0x07
+#define CMD_FS_LIST 0x08
+#define CMD_FS_DELETE 0x09
+#define CMD_FS_READ 0x0A
+#define CMD_GENERIC_REQ 0x10
+
+#define RESP_ACK 0x00
+#define RESP_NACK 0x01
+#define RESP_PONG 0x02
+#define RESP_SCAN_DATA 0x20
+
 class BinaryInterface {
   public:
     BinaryInterface();
@@ -12,32 +34,12 @@ class BinaryInterface {
     bool isUpdateMode();
     bool isPending();
     void sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len);
-    
+
   private:
     void handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len);
     // void sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len); // Moved to public
     
-    // Protocol Constants
-    const uint8_t START_BYTE = 0xA5;
-    const uint8_t END_BYTE = 0x5A;
-    
-    const uint8_t CMD_PING = 0x00;
-    const uint8_t CMD_SCAN_AP = 0x01;
-    const uint8_t CMD_SCAN_STA = 0x02;
-    const uint8_t CMD_STOP_SCAN = 0x03;
-    const uint8_t CMD_ATTACK = 0x04;
-    const uint8_t CMD_GET_CONFIG = 0x05;
-    const uint8_t CMD_REBOOT = 0x06;
-    const uint8_t CMD_UPDATE_START = 0x07;
-    const uint8_t CMD_FS_LIST = 0x08;
-    const uint8_t CMD_FS_DELETE = 0x09;
-    const uint8_t CMD_FS_READ = 0x0A;
-    const uint8_t CMD_GENERIC_REQ = 0x10;
-    
-    const uint8_t RESP_ACK = 0x00;
-    const uint8_t RESP_NACK = 0x01;
-    const uint8_t RESP_PONG = 0x02;
-    const uint8_t RESP_SCAN_DATA = 0x20;
+    // Protocol Constants (Moved to global #defines)
 
     // State machine
     enum State {
