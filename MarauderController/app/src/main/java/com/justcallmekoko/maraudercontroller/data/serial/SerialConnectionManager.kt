@@ -148,7 +148,7 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
                 
                 // Start IO manager
                 ioManager = SerialInputOutputManager(port, this@SerialConnectionManager).apply {
-                    executor.submit(this)
+                    start()
                 }
                 
                 _connectionState.value = ConnectionState.Connected(device.deviceName)
