@@ -30,6 +30,7 @@ jobs:
     - name: Build Firmware (LDDB Variant)
       working-directory: MarauderController
       run: |
+        export PATH="$HOME/bin:$PATH"
         chmod +x build_firmware.sh
         ./build_firmware.sh
 
@@ -42,13 +43,13 @@ jobs:
       run: ./gradlew assembleRelease
 
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: MarauderController-Release
         path: MarauderController/app/build/outputs/apk/release/*.apk
     
     - name: Upload Firmware Binaries
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: MarauderFirmware-LDDB
         path: MarauderController/app/src/main/assets/firmware/*.bin
