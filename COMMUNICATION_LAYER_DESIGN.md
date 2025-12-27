@@ -334,10 +334,10 @@ void loop() {
 
 **Key Points:**
 - `binary_obj.main()` called **before** `cli_obj.main()`
-- Binary interface peeks at serial data to detect binary packets
-- If binary packet detected, it's consumed by binary handler
-- Otherwise, text data flows to CLI handler
-- Both can coexist without conflicts
+- Binary interface reads and consumes serial data to detect binary packets
+- If a valid binary packet is detected, it's consumed by the binary handler
+- Bytes that are not part of a recognized binary packet are not forwarded to the CLI and may be discarded
+- Text and binary protocols are supported by separate handlers, but they should not arbitrarily interleave on the same serial byte stream
 
 ### Android Data Flow
 
