@@ -2577,6 +2577,10 @@ void MenuFunctions::RunSetup()
     this->changeMenu(&settingsMenu, true);
   });
 
+  this->addNodes(&deviceMenu, text_table1[30], TFTLIGHTGREY, NULL, REBOOT, []() {
+    ESP.restart();
+  });
+
   #ifdef HAS_SD
     if (sd_obj.supported) {
 
