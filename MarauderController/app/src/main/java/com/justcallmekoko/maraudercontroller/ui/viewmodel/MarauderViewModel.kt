@@ -40,6 +40,9 @@ class MarauderViewModel(
     
     private val _showTerminal = MutableStateFlow(false)
     val showTerminal: StateFlow<Boolean> = _showTerminal.asStateFlow()
+
+    private val _isLiveScanning = MutableStateFlow(false)
+    val isLiveScanning: StateFlow<Boolean> = _isLiveScanning.asStateFlow()
     
     // Derived state
     val isConnected: StateFlow<Boolean> = connectionState.map { 
@@ -83,7 +86,21 @@ class MarauderViewModel(
     }
     
     fun stopScan() {
+        if (_isLiveScanning.value) {
+            repository.stopLiveScan()
+            _isLiveScanning.value = false
+        }
         repository.stopScan()
+    }
+
+    fun toggleLiveScan() {
+        if (_isLiveScanning.value) {
+            repository.stopLiveScan()
+            _isLiveScanning.value = false
+        } else {
+            repository.startLiveScan()
+            _isLiveScanning.value = true
+        }
     }
     
     fun refreshAccessPoints() {

@@ -82,17 +82,6 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Terminal overlay
-            if (showTerminal) {
-                TerminalView(
-                    viewModel = viewModel,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(0.4f)
-                )
-                Divider()
-            }
-            
             // Main content
             Box(
                 modifier = Modifier
@@ -117,6 +106,22 @@ fun MainScreen(
                     }
                 }
             }
+        }
+    }
+    
+    // Terminal Bottom Sheet
+    if (showTerminal) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.toggleTerminal() },
+            sheetState = rememberModalBottomSheetState(),
+            containerColor = androidx.compose.ui.graphics.Color.Black
+        ) {
+            TerminalView(
+                viewModel = viewModel,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.5f)
+            )
         }
     }
     

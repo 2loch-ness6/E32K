@@ -22,6 +22,7 @@ import com.justcallmekoko.maraudercontroller.ui.viewmodel.MarauderViewModel
 fun WiFiScanScreen(viewModel: MarauderViewModel) {
     val accessPoints by viewModel.accessPoints.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
+    val isLiveScanning by viewModel.isLiveScanning.collectAsState()
     val currentScan by viewModel.currentScan.collectAsState()
     
     Column(modifier = Modifier.fillMaxSize()) {
@@ -47,7 +48,18 @@ fun WiFiScanScreen(viewModel: MarauderViewModel) {
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isScanning) "Stop Scan" else "Scan APs")
+                Text(if (isScanning) "Stop" else "Scan")
+            }
+            
+            Button(
+                onClick = { viewModel.toggleLiveScan() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isLiveScanning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Icon(Icons.Default.Autorenew, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (isLiveScanning) "Live On" else "Live")
             }
             
             OutlinedButton(onClick = { viewModel.refreshAccessPoints() }) {

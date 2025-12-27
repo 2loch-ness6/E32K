@@ -3,11 +3,15 @@ package com.justcallmekoko.maraudercontroller.data.repository
 import android.content.Context
 import com.justcallmekoko.maraudercontroller.data.protocol.*
 import com.justcallmekoko.maraudercontroller.data.serial.SerialConnectionManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 
 /**
  * Repository managing Marauder device state and communication
@@ -55,6 +59,7 @@ class MarauderRepository(context: Context) {
     
     private val responseBuffer = mutableListOf<String>()
     private var listMode: ListMode? = null
+    private var liveScanJob: Job? = null
     
     enum class ListMode {
         ACCESS_POINTS,
@@ -224,13 +229,45 @@ class MarauderRepository(context: Context) {
         sendCommand(if (continuous) "${MarauderCommands.SCAN_STA} -c" else MarauderCommands.SCAN_STA)
     }
     
+    private suspend fun stopScanSuspend() {
+        addToTerminal("> ${MarauderCommands.STOP_SCAN}")
+        val pattern = Regex("Stopping|Stopped", RegexOption.IGNORE_CASE)
+        serialManager.sendCommandAndWait(MarauderCommands.STOP_SCAN, pattern)
+    }
+
     fun stopScan() {
-        scope.launch {
-            addToTerminal("> ${MarauderCommands.STOP_SCAN}")
-            // Wait for "Stopping" or "Stopped" to ensure scan is done before allowing new commands
-            val pattern = Regex("Stopping|Stopped", RegexOption.IGNORE_CASE)
-            serialManager.sendCommandAndWait(MarauderCommands.STOP_SCAN, pattern)
+        scope.launch { stopScanSuspend() }
+    }
+    
+    private suspend fun listAccessPointsSuspend() {
+        val cmd = MarauderCommands.buildListCommand(apList = true)
+        addToTerminal("> $cmd")
+        // Wait for prompt > which indicates list is done
+        val promptPattern = Regex("^>\\s*$")
+        serialManager.sendCommandAndWait(cmd, promptPattern, timeoutMs = 10000)
+    }
+
+    fun startLiveScan(intervalMs: Long = 5000) {
+        liveScanJob?.cancel()
+        liveScanJob = scope.launch {
+            try {
+                while (isActive) {
+                    scanAp(continuous = true)
+                    delay(intervalMs)
+                    stopScanSuspend()
+                    listAccessPointsSuspend()
+                    delay(500) // Short delay to read
+                }
+            } catch (e: CancellationException) {
+                stopScanSuspend()
+            }
         }
+    }
+
+    fun stopLiveScan() {
+        liveScanJob?.cancel()
+        liveScanJob = null
+        stopScan()
     }
     
     fun listAccessPoints() {
