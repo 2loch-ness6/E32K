@@ -42,6 +42,10 @@ void BinaryInterface::main(uint32_t currentTime) {
         currentLen = byte;
         if (currentLen == 0) {
           currentState = WAIT_END;
+        } else if (currentLen > sizeof(payloadBuffer)) {
+          // Payload too large - will discard and NACK
+          currentState = WAIT_PAYLOAD;
+          payloadIndex = 0;
         } else {
           currentState = WAIT_PAYLOAD;
           payloadIndex = 0;
@@ -49,16 +53,38 @@ void BinaryInterface::main(uint32_t currentTime) {
         break;
         
       case WAIT_PAYLOAD:
-        payloadBuffer[payloadIndex++] = byte;
-        if (payloadIndex >= currentLen) {
-          currentState = WAIT_END;
+        // Check if payload length exceeds buffer size
+        if (currentLen > sizeof(payloadBuffer)) {
+          // Discard oversized payload bytes without writing to buffer
+          payloadIndex++;
+          if (payloadIndex >= currentLen) {
+            currentState = WAIT_END;
+          }
+        } else {
+          // Normal case: safe to write into payload buffer
+          if (payloadIndex < sizeof(payloadBuffer)) {
+            payloadBuffer[payloadIndex++] = byte;
+            if (payloadIndex >= currentLen) {
+              currentState = WAIT_END;
+            }
+          } else {
+            // Safety check: shouldn't reach here, but reset if we do
+            currentState = WAIT_START;
+            payloadIndex = 0;
+          }
         }
         break;
         
       case WAIT_END:
         if (byte == END_BYTE) {
-          // Valid packet received
-          handlePacket(currentCmd, payloadBuffer, currentLen);
+          // Check if packet was oversized
+          if (currentLen > sizeof(payloadBuffer)) {
+            // Oversized packet: NACK it
+            sendResponse(RESP_NACK, NULL, 0);
+          } else {
+            // Valid packet received
+            handlePacket(currentCmd, payloadBuffer, currentLen);
+          }
         }
         // Reset state machine
         currentState = WAIT_START;
@@ -71,10 +97,20 @@ void BinaryInterface::main(uint32_t currentTime) {
 void BinaryInterface::handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len) {
   switch (cmd) {
     case CMD_PING:
-      sendResponse(RESP_PONG, NULL, 0);
+      // PING expects no payload
+      if (len == 0) {
+        sendResponse(RESP_PONG, NULL, 0);
+      } else {
+        sendResponse(RESP_NACK, NULL, 0);
+      }
       break;
       
     case CMD_UPDATE_START:
+      // UPDATE_START expects no payload
+      if (len != 0) {
+        sendResponse(RESP_NACK, NULL, 0);
+        break;
+      }
       // Try to begin update; only enter update mode on success
       if (Update.begin(UPDATE_SIZE_UNKNOWN)) {
         update_mode = true;
