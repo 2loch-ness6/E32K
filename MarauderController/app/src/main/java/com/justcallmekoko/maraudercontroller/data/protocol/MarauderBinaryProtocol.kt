@@ -17,6 +17,9 @@ object MarauderBinaryProtocol {
     const val CMD_GET_CONFIG: Byte = 0x05
     const val CMD_REBOOT: Byte = 0x06
     const val CMD_UPDATE: Byte = 0x07
+    const val CMD_FS_LIST: Byte = 0x08
+    const val CMD_FS_DELETE: Byte = 0x09
+    const val CMD_FS_READ: Byte = 0x0A
     const val CMD_GENERIC_REQ: Byte = 0x10.toByte()
     
     // Response IDs

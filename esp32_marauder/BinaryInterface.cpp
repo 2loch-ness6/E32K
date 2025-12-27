@@ -2,6 +2,7 @@
 #include "WiFiScan.h"
 
 extern WiFiScan wifi_scan_obj;
+extern SDInterface sd_obj;
 
 BinaryInterface::BinaryInterface() {
   currentState = WAIT_START;
@@ -71,7 +72,7 @@ void BinaryInterface::main(uint32_t currentTime) {
           payloadIndex++;
           if (payloadIndex >= currentLen) {
             currentState = WAIT_END;
-          }
+          } 
         } else {
           // Normal case: safe to write into payload buffer
           if (payloadIndex < sizeof(payloadBuffer)) {
@@ -202,13 +203,119 @@ void BinaryInterface::handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len) {
         sendResponse(RESP_NACK, NULL, 0);
       }
       break;
+
+    case CMD_FS_LIST: {
+        if (!sd_obj.supported) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+        
+        File root = SD.open("/");
+        if (!root || !root.isDirectory()) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+
+        File file = root.openNextFile();
+        while (file) {
+            if (!file.isDirectory()) {
+                String fileName = file.name();
+                if (fileName.startsWith("/")) fileName = fileName.substring(1);
+                
+                uint32_t fileSize = file.size();
+                uint8_t nameLen = fileName.length();
+                
+                uint8_t buf[6 + 64]; 
+                buf[0] = 0x05; // Type FileEntry
+                memcpy(&buf[1], &fileSize, 4);
+                buf[5] = nameLen;
+                if (nameLen > 64) nameLen = 64;
+                memcpy(&buf[6], fileName.c_str(), nameLen);
+                
+                sendResponse(RESP_SCAN_DATA, buf, 6 + nameLen);
+            }
+            file = root.openNextFile();
+        }
+        sendResponse(RESP_ACK, NULL, 0);
+        break;
+    }
+
+    case CMD_FS_DELETE: {
+        if (!sd_obj.supported || len < 2) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+        uint8_t nameLen = payload[0];
+        if (len < 1 + nameLen) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+        char nameBuf[65];
+        if (nameLen > 64) nameLen = 64;
+        memcpy(nameBuf, &payload[1], nameLen);
+        nameBuf[nameLen] = 0;
+        String fileName = "/" + String(nameBuf);
+        
+        if (SD.remove(fileName)) {
+            sendResponse(RESP_ACK, NULL, 0);
+        } else {
+            sendResponse(RESP_NACK, NULL, 0);
+        }
+        break;
+    }
+
+    case CMD_FS_READ: {
+        if (!sd_obj.supported || len < 2) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+        uint8_t nameLen = payload[0];
+        if (len < 1 + nameLen) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+        char nameBuf[65];
+        if (nameLen > 64) nameLen = 64;
+        memcpy(nameBuf, &payload[1], nameLen);
+        nameBuf[nameLen] = 0;
+        String fileName = "/" + String(nameBuf);
+        
+        File file = SD.open(fileName, FILE_READ);
+        if (!file || file.isDirectory()) {
+            sendResponse(RESP_NACK, NULL, 0);
+            break;
+        }
+
+        uint8_t buffer[200];
+        uint16_t seq = 0;
+        while (file.available()) {
+            int bytesRead = file.read(&buffer[4], 190);
+            if (bytesRead > 0) {
+                buffer[0] = 0x06; // File Data
+                memcpy(&buffer[1], &seq, 2);
+                buffer[3] = (uint8_t)bytesRead;
+                sendResponse(RESP_SCAN_DATA, buffer, 4 + bytesRead);
+                seq++;
+                delay(2); 
+            }
+        }
+        
+        // Send EOF Chunk (Len 0)
+        buffer[0] = 0x06;
+        memcpy(&buffer[1], &seq, 2);
+        buffer[3] = 0;
+        sendResponse(RESP_SCAN_DATA, buffer, 4);
+        
+        file.close();
+        sendResponse(RESP_ACK, NULL, 0);
+        break;
+    }
       
     default:
       sendResponse(RESP_NACK, NULL, 0);
       break;
   }
 }
-
 void BinaryInterface::sendResponse(uint8_t cmd, uint8_t* payload, uint8_t len) {
   Serial.write(START_BYTE);
   Serial.write(cmd);

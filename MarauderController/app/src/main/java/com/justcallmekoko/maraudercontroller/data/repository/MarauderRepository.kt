@@ -61,11 +61,23 @@ class MarauderRepository(context: Context) {
     
     private val _currentChannel = MutableStateFlow(1)
     val currentChannel: StateFlow<Int> = _currentChannel.asStateFlow()
+
+    private val _fileList = MutableStateFlow<List<FileEntry>>(emptyList())
+    val fileList: StateFlow<List<FileEntry>> = _fileList.asStateFlow()
     
     private val responseBuffer = mutableListOf<String>()
     private var listMode: ListMode? = null
     private var liveScanJob: Job? = null
     
+    data class FileEntry(
+        val name: String,
+        val size: Long
+    )
+    
+    data class FileChunk(val seq: Int, val data: ByteArray)
+    
+    private val _fileDownloadChunks = MutableSharedFlow<FileChunk>(extraBufferCapacity = 100)
+
     enum class ListMode {
         ACCESS_POINTS,
         STATIONS,
@@ -105,9 +117,9 @@ class MarauderRepository(context: Context) {
         val type = payload[0].toInt()
         
         // Type 0x01: Access Point
-        if (type == 0x01 && payload.size > 10) {
+        if (type == 0x01 && payload.size >= 11) {
             try {
-                // [Type:1][RSSI:1][Ch:1][MAC:6][SSID_Len:1][SSID:Var]
+                // [Type:1][RSSI:1][Ch:1][MAC:6][Auth:1][SSID_Len:1][SSID:Var]
                 val rssi = payload[1].toByte().toInt()
                 val channel = payload[2].toInt() and 0xFF
                 
@@ -115,10 +127,12 @@ class MarauderRepository(context: Context) {
                 val macBytes = payload.copyOfRange(3, 9)
                 val mac = macBytes.joinToString(":") { "%02X".format(it) }
                 
-                val ssidLen = payload[9].toInt() and 0xFF
+                val auth = payload[9].toInt() and 0xFF
+                
+                val ssidLen = payload[10].toInt() and 0xFF
                 var ssid = ""
-                if (ssidLen > 0 && payload.size >= 10 + ssidLen) {
-                    ssid = String(payload, 10, ssidLen)
+                if (ssidLen > 0 && payload.size >= 11 + ssidLen) {
+                    ssid = String(payload, 11, ssidLen)
                 }
                 
                 // Create AP Object
@@ -127,7 +141,7 @@ class MarauderRepository(context: Context) {
                     bssid = mac,
                     channel = channel,
                     rssi = rssi,
-                    encryption = "UNK", // Binary protocol v1.1 doesn't send auth yet
+                    encryption = if (auth == 1) "WPA" else "OPEN", // Simplified
                     lastSeen = System.currentTimeMillis()
                 )
                 
@@ -197,6 +211,53 @@ class MarauderRepository(context: Context) {
                     timestamp = System.currentTimeMillis().toString()
                 )
             } catch (e: Exception) { }
+        }
+        // Type 0x05: File Entry
+        else if (type == 0x05 && payload.size > 5) {
+            try {
+                // [Type:1][Size:4][Name_Len:1][Name:Var]
+                val buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
+                buffer.get() // Skip type
+                val size = buffer.getInt().toLong() and 0xFFFFFFFFL
+                val nameLen = buffer.get().toInt() and 0xFF
+                var name = ""
+                if (nameLen > 0 && payload.size >= 6 + nameLen) {
+                    name = String(payload, 6, nameLen)
+                }
+                
+                val newFile = FileEntry(name, size)
+                updateFileList(newFile)
+            } catch (e: Exception) { }
+        }
+        // Type 0x06: File Data
+        else if (type == 0x06 && payload.size > 3) {
+            try {
+                // [Type:1][Seq:2][Len:1][Data:Var]
+                val buffer = ByteBuffer.wrap(payload).order(ByteOrder.LITTLE_ENDIAN)
+                buffer.get() // Skip type
+                val seq = buffer.getShort().toInt() and 0xFFFF
+                val dataLen = buffer.get().toInt() and 0xFF
+                
+                if (dataLen > 0 && payload.size >= 4 + dataLen) {
+                    val chunk = payload.copyOfRange(4, 4 + dataLen)
+                    scope.launch {
+                        _fileDownloadChunks.emit(FileChunk(seq, chunk))
+                    }
+                } else if (dataLen == 0) {
+                     // EOF Marker
+                     scope.launch {
+                        _fileDownloadChunks.emit(FileChunk(-1, ByteArray(0)))
+                    }
+                }
+            } catch (e: Exception) { }
+        }
+    }
+
+    private fun updateFileList(newFile: FileEntry) {
+        val currentList = _fileList.value.toMutableList()
+        if (currentList.none { it.name == newFile.name }) {
+            currentList.add(newFile)
+            _fileList.value = currentList
         }
     }
 
@@ -544,6 +605,62 @@ class MarauderRepository(context: Context) {
             payload
         )
         serialManager.sendBinaryCommand(packet)
+    }
+
+    fun refreshFileList() {
+        // Clear list first
+        _fileList.value = emptyList()
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_FS_LIST, 0, ByteArray(0)
+        )
+        serialManager.sendBinaryCommand(packet)
+    }
+
+    fun deleteFile(filename: String) {
+        val nameBytes = filename.toByteArray()
+        val payload = ByteArray(1 + nameBytes.size)
+        payload[0] = nameBytes.size.toByte()
+        System.arraycopy(nameBytes, 0, payload, 1, nameBytes.size)
+        
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_FS_DELETE, payload.size, payload
+        )
+        serialManager.sendBinaryCommand(packet)
+        // Refresh after delay
+        scope.launch {
+            delay(500)
+            refreshFileList()
+        }
+    }
+
+    fun downloadFile(filename: String): Flow<ByteArray> = flow {
+        // Request download
+        val nameBytes = filename.toByteArray()
+        val payload = ByteArray(1 + nameBytes.size)
+        payload[0] = nameBytes.size.toByte()
+        System.arraycopy(nameBytes, 0, payload, 1, nameBytes.size)
+        
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_FS_READ, payload.size, payload
+        )
+        serialManager.sendBinaryCommand(packet)
+        
+        try {
+            // Collect until EOF (-1) or error
+            // We use a longer timeout or infinite since we have an explicit EOF
+            withTimeoutOrNull(60000) { // 60s timeout just in case
+                _fileDownloadChunks.collect { chunk ->
+                    if (chunk.seq == -1) {
+                        throw CancellationException("EOF")
+                    }
+                    emit(chunk.data)
+                }
+            }
+        } catch (e: CancellationException) {
+            // Normal end of stream
+        } catch (e: Exception) {
+            // Error
+        }
     }
     
     fun clearAccessPoints() {

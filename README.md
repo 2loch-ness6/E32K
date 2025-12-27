@@ -1,28 +1,37 @@
-<!---[![License: MIT](https://img.shields.io/github/license/mashape/apistatus.svg)](https://github.com/justcallmekoko/ESP32Marauder/blob/master/LICENSE)--->
-<!---[![Gitter](https://badges.gitter.im/justcallmekoko/ESP32Marauder.png)](https://gitter.im/justcallmekoko/ESP32Marauder)--->
-<!---[![Build Status](https://travis-ci.com/justcallmekoko/ESP32Marauder.svg?branch=master)](https://travis-ci.com/justcallmekoko/ESP32Marauder)--->
-<!---Shields/Badges https://shields.io/--->
-
-# ESP32 Marauder
+# ESP32 Marauder (E32K Fork)
 <p align="center"><img alt="Marauder logo" src="https://github.com/justcallmekoko/ESP32Marauder/blob/master/pictures/marauder_skull_patch_04_full_final.png?raw=true" width="300"></p>
-<p align="center">
-  <b>A suite of WiFi/Bluetooth offensive and defensive tools for the ESP32</b>
-  <br><br>
-  <a href="https://github.com/justcallmekoko/ESP32Marauder/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/mashape/apistatus.svg"></a>
-  <a href="https://gitter.im/justcallmekoko/ESP32Marauder"><img alt="Gitter" src="https://badges.gitter.im/justcallmekoko/ESP32Marauder.png"/></a>
-  <a href="https://github.com/justcallmekoko/ESP32Marauder/releases/latest"><img src="https://img.shields.io/github/downloads/justcallmekoko/ESP32Marauder/total" alt="Downloads"/></a>
-  <br>
-  <a href="https://twitter.com/intent/follow?screen_name=jcmkyoutube"><img src="https://img.shields.io/twitter/follow/jcmkyoutube?style=social&logo=twitter" alt="Twitter"></a>
-  <a href="https://www.instagram.com/just.call.me.koko"><img src="https://img.shields.io/badge/Follow%20Me-Instagram-orange" alt="Instagram"/></a>
-  <br><br>
-</p>
-    
-[![Build and Push](https://github.com/justcallmekoko/ESP32Marauder/actions/workflows/build_push.yml/badge.svg)](https://github.com/justcallmekoko/ESP32Marauder/actions/workflows/build_push.yml)
+
+## Overview
+This is a modernized fork of the ESP32 Marauder, featuring a **High-Speed Binary Protocol** and a completely redesigned **Android Controller**.
+
+### Key Features
+*   **Binary Protocol (v1.1):** Replaces slow text-based parsing with a compact binary stream for real-time AP/Station/BLE data ingestion.
+*   **Android Controller (Nexus):** A new Jetpack Compose application with a cyberpunk aesthetic, supporting:
+    *   **Live Dashboard:** Real-time metrics and scanning.
+    *   **File System Manager:** List, delete, and download (PCAP) files from the SD card.
+    *   **Targeted Attacks:** Precise deauthentication using specific AP/Station MACs.
+    *   **Terminal:** Integrated serial terminal for low-level control.
+*   **Firmware Improvements:** Optimized scanning logic, binary packet generation, and reduced latency.
+
+## Project Structure
+*   `esp32_marauder/`: Core firmware (C++/Arduino).
+*   `MarauderController/`: Android application (Kotlin/Compose).
+*   `BINARY_PROTOCOL_SCHEMA.md`: Documentation of the custom binary protocol.
 
 ## Getting Started
-Download the [latest release](https://github.com/justcallmekoko/ESP32Marauder/releases/latest) of the firmware.  
 
-Check out the project [wiki](https://github.com/justcallmekoko/ESP32Marauder/wiki) for a full overview of the ESP32 Marauder
+### Firmware
+1.  Open `esp32_marauder/esp32_marauder.ino` in Arduino IDE.
+2.  Select your board in `configs.h` (Default: `ESP32_LDDB`).
+3.  Compile and upload.
 
-# For Sale Now
-You can buy the ESP32 Marauder using [this link](https://www.justcallmekokollc.com)
+### Android App
+1.  Open `MarauderController/` in Android Studio.
+2.  Build and install the APK (`./gradlew assembleDebug`).
+3.  Connect your ESP32 via USB OTG.
+
+## License
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+*Original Project by [justcallmekoko](https://github.com/justcallmekoko/ESP32Marauder)*

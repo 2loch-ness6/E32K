@@ -6011,7 +6011,7 @@ void WiFiScan::apSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
         uint8_t ssid_len_bin = snifferPacket->payload[37];
         if (ssid_len_bin > 32) ssid_len_bin = 32; 
         
-        uint8_t packetLen = 10 + ssid_len_bin;
+        uint8_t packetLen = 11 + ssid_len_bin; // +1 for Auth
         uint8_t* packetData = (uint8_t*)malloc(packetLen);
         
         if (packetData) {
@@ -6019,8 +6019,13 @@ void WiFiScan::apSnifferCallback(void* buf, wifi_promiscuous_pkt_type_t type)
             packetData[1] = snifferPacket->rx_ctrl.rssi;
             packetData[2] = snifferPacket->rx_ctrl.channel;
             memcpy(&packetData[3], &snifferPacket->payload[10], 6); // MAC
-            packetData[9] = ssid_len_bin;
-            memcpy(&packetData[10], &snifferPacket->payload[38], ssid_len_bin); // SSID
+            
+            // Auth (Capability Info at offset 34, bit 4 is Privacy)
+            uint16_t capability = snifferPacket->payload[34] | (snifferPacket->payload[35] << 8);
+            packetData[9] = (capability & 0x0010) ? 0x01 : 0x00;
+            
+            packetData[10] = ssid_len_bin;
+            memcpy(&packetData[11], &snifferPacket->payload[38], ssid_len_bin); // SSID
             
             binary_obj.sendResponse(RESP_SCAN_DATA, packetData, packetLen);
             free(packetData);

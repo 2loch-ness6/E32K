@@ -132,7 +132,14 @@ fun WiFiScanScreen(viewModel: MarauderViewModel) {
                     AccessPointCard(
                         index = index,
                         ap = ap,
-                        onSelect = { viewModel.selectAccessPoint(index) }
+                        onSelect = { viewModel.selectAccessPoint(index) },
+                        onDeauth = { 
+                            viewModel.startTargetedAttack(
+                                channel = ap.channel,
+                                apMac = ap.bssid,
+                                stationMac = "FF:FF:FF:FF:FF:FF"
+                            )
+                        }
                     )
                 }
             }
@@ -145,7 +152,8 @@ fun WiFiScanScreen(viewModel: MarauderViewModel) {
 fun AccessPointCard(
     index: Int,
     ap: AccessPoint,
-    onSelect: () -> Unit
+    onSelect: () -> Unit,
+    onDeauth: () -> Unit
 ) {
     Card(
         onClick = onSelect,
@@ -233,22 +241,20 @@ fun AccessPointCard(
                     )
                 }
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 
-                // Security
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (ap.encryption.contains("OPEN", true)) {
-                        Icon(Icons.Default.LockOpen, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error)
-                    } else {
-                        Icon(Icons.Default.Lock, null, modifier = Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                Row {
+                   // Deauth Button
+                    IconButton(
+                        onClick = onDeauth,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Bolt,
+                            contentDescription = "Deauth",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = ap.encryption.take(4),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 10.sp
-                    )
                 }
             }
         }

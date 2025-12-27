@@ -5,11 +5,12 @@ A native Android application for controlling ESP32 Marauder devices over USB OTG
 ## Features
 
 - **USB Serial Communication**: Direct USB connection to ESP32 Marauder via USB OTG
-- **WiFi Scanning**: Scan for access points and stations
-- **Attack Operations**: Launch various WiFi attacks (deauth, beacon spam, probe, etc.)
-- **List Management**: Manage access points, stations, and SSIDs
-- **Terminal Interface**: Send custom commands directly to the device
-- **Material Design 3 UI**: Modern, intuitive interface built with Jetpack Compose
+- **Binary Protocol**: High-speed, low-latency data ingestion for APs, Stations, and BLE devices.
+- **WiFi Scanning**: Real-time scanning for access points and stations with encryption detection.
+- **Targeted Attacks**: Precise deauthentication attacks targeting specific APs and Stations.
+- **File System Manager**: List, delete, and download files (e.g., PCAP captures) from the ESP32 SD card.
+- **Terminal Interface**: Direct command-line interaction with the ESP32.
+- **Nexus UI**: Cyberpunk-inspired Material Design 3 interface.
 
 ## Requirements
 
@@ -146,6 +147,11 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 - **Device Info**: View ESP32 device information
 - **GPS Data**: View GPS information (if GPS module connected)
 - **Reboot**: Restart the ESP32 device
+
+#### Files Tab
+- **List Files**: View files on the attached SD card.
+- **Download**: Download files (PCAP, logs) to your Android device.
+- **Delete**: Remove files from the SD card.
 
 #### Terminal
 - Tap the terminal icon (top bar) to show/hide the terminal

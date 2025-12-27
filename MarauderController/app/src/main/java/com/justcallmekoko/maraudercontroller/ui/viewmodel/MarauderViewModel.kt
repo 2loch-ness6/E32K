@@ -33,6 +33,7 @@ class MarauderViewModel(
     val currentAttack: StateFlow<AttackType?> = repository.currentAttack
     val terminalOutput: StateFlow<List<String>> = repository.terminalOutput
     val currentChannel: StateFlow<Int> = repository.currentChannel
+    val fileList: StateFlow<List<MarauderRepository.FileEntry>> = repository.fileList
     
     // UI state
     private val _selectedTab = MutableStateFlow(0)
@@ -187,85 +188,42 @@ class MarauderViewModel(
         repository.attack(type, targetMac, timeout)
     }
 
-    // Targeted Attack (Phase 3)
-    fun startTargetedAttack(type: Int, channel: Int, apMac: String, stationMac: String = "ff:ff:ff:ff:ff:ff") {
-        repository.sendBinaryAttack(type, channel, apMac, stationMac)
-    }
-    
-    fun stopAttack() {
-        repository.stopScan() // Stop scan stops attacks too
-    }
-    
-    // Channel management
-    fun setChannel(channel: Int) {
-        repository.setChannel(channel)
-    }
-    
-    // Device info
-    fun refreshDeviceInfo() {
-        repository.getDeviceInfo()
-    }
-    
-    fun refreshGpsData() {
-        repository.getGpsData()
-    }
-    
-    fun reboot() {
-        repository.reboot()
-    }
-    
-    // Terminal
-    fun sendCommand(command: String) {
-        repository.sendCommand(command)
-    }
-    
-    fun clearTerminal() {
-        repository.clearTerminal()
-    }
-    
-    fun toggleTerminal() {
-        _showTerminal.value = !_showTerminal.value
-    }
-    
-    // UI navigation
-    fun selectTab(index: Int) {
-        _selectedTab.value = index
-    }
-    
-    // Theme management
-    fun setThemeMode(mode: PreferencesManager.ThemeMode) {
+    fun startTargetedAttack(channel: Int, apMac: String, stationMac: String) {
         viewModelScope.launch {
-            preferencesManager.setThemeMode(mode)
+            repository.sendBinaryAttack(0x01, channel, apMac, stationMac)
         }
     }
     
-    val themeModeFlow = preferencesManager.themeModeFlow
-    
-    // Preferences
-    fun setAutoConnect(enabled: Boolean) {
+    fun refreshFileList() {
         viewModelScope.launch {
-            preferencesManager.setAutoConnect(enabled)
+            repository.refreshFileList()
         }
     }
     
-    val autoConnectFlow = preferencesManager.autoConnectFlow
-    
-    fun setGpsEnabled(enabled: Boolean) {
+    fun deleteFile(filename: String) {
         viewModelScope.launch {
-            preferencesManager.setGpsEnabled(enabled)
+            repository.deleteFile(filename)
         }
     }
     
-    val gpsEnabledFlow = preferencesManager.gpsEnabledFlow
-    
-    fun setBluetoothEnabled(enabled: Boolean) {
+    // Simple download to local cache for now
+    fun downloadFile(context: android.content.Context, filename: String) {
         viewModelScope.launch {
-            preferencesManager.setBluetoothEnabled(enabled)
+            val file = java.io.File(context.getExternalFilesDir(null), filename)
+            val outputStream = java.io.FileOutputStream(file)
+            try {
+                repository.downloadFile(filename).collect { chunk ->
+                    outputStream.write(chunk)
+                }
+                android.widget.Toast.makeText(context, "Downloaded to ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "Download failed", android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                outputStream.close()
+            }
         }
     }
-    
-    val bluetoothEnabledFlow = preferencesManager.bluetoothEnabledFlow
-    
+
     override fun onCleared() {
         super.onCleared()
         repository.release()

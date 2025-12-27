@@ -102,6 +102,16 @@ fun MainScreen(
                             indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                         )
                     )
+                    NavigationBarItem(
+                        selected = selectedTab == 4,
+                        onClick = { viewModel.selectTab(4) },
+                        icon = { Icon(Icons.Default.Folder, "Files") },
+                        label = { Text("Files") },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
+                    )
                 }
             }
         }
@@ -134,7 +144,9 @@ fun MainScreen(
                     selectedTab == 3 -> {
                         SettingsScreen(viewModel = viewModel)
                     }
-                    // Handle legacy "Lists" tab index shifting if necessary, or just drop it for now
+                    selectedTab == 4 -> {
+                        FileScreen(viewModel = viewModel)
+                    }
                 }
             }
         }

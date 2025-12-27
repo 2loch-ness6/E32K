@@ -77,6 +77,23 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
     *   `ModeID`: Matches `WiFiScan.h` constants (e.g., `WIFI_SCAN_WAR_DRIVE = 32`).
 *   **Response:** `RESP_ACK`.
 
+### File System Commands
+
+#### `CMD_FS_LIST` (0x08)
+*   **Description:** Request a list of files in the root directory.
+*   **Payload:** None.
+*   **Response:** Sequence of `RESP_SCAN_DATA` (Type 0x05: File Entry) followed by `RESP_ACK`.
+
+#### `CMD_FS_DELETE` (0x09)
+*   **Description:** Delete a specific file.
+*   **Payload:** `[Filename Length (1)] [Filename (Variable)]`
+*   **Response:** `RESP_ACK` or `RESP_NACK`.
+
+#### `CMD_FS_READ` (0x0A)
+*   **Description:** Request file content (Download).
+*   **Payload:** `[Filename Length (1)] [Filename (Variable)]`
+*   **Response:** Sequence of `RESP_SCAN_DATA` (Type 0x06: File Data Chunk) followed by `RESP_ACK`.
+
 ---
 
 ## Response & Data Codes
@@ -88,13 +105,14 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
 ### `RESP_SCAN_DATA` Payload Structure
 | Offset | Type | Description |
 | :--- | :--- | :--- |
-| 0 | Byte | **Data Type** (0x01=AP, 0x02=Station, 0x03=BLE) |
+| 0 | Byte | **Data Type** (0x01=AP, 0x02=Station, 0x03=BLE, 0x04=GPS, 0x05=FileEntry, 0x06=FileData) |
 | 1 | N Bytes | **Data Object** (See definitions below) |
 
 #### Data Object: Access Point (Type 0x01)
 *   `RSSI` (1 Byte, signed)
 *   `Channel` (1 Byte)
 *   `MacAddr` (6 Bytes)
+*   `Auth` (1 Byte, see `wifi_auth_mode_t`)
 *   `SSID_Len` (1 Byte)
 *   `SSID` (Variable)
 
@@ -116,5 +134,16 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
 *   `Alt` (8 Bytes, Double)
 *   `Sats` (1 Byte)
 *   `Fix` (1 Byte, 0 or 1)
+
+#### Data Object: File Entry (Type 0x05)
+*   `Size` (4 Bytes, uint32)
+*   `Name_Len` (1 Byte)
+*   `Name` (Variable)
+
+#### Data Object: File Data Chunk (Type 0x06)
+*   `Sequence` (2 Bytes, uint16)
+*   `Data_Len` (1 Byte)
+*   `Data` (Variable)
+*   **Note:** A chunk with `Data_Len = 0` indicates End of File (EOF).
 
 **(To be expanded as implementation matures)**
