@@ -113,12 +113,33 @@ data class PacketStats(
     val total: Int = 0
 )
 
+@Serializable
+data class BluetoothDevice(
+    val address: String = "",
+    val name: String = "",
+    val rssi: Int = 0,
+    val type: String = "",
+    val services: List<String> = emptyList(),
+    val manufacturer: String = "",
+    val lastSeen: Long = 0
+)
+
+@Serializable
+data class ScriptConfig(
+    val name: String = "",
+    val commands: List<String> = emptyList(),
+    val delay: Int = 1000,
+    val repeat: Boolean = false,
+    val repeatCount: Int = 1
+)
+
 sealed class MarauderResponse {
     data class Success(val message: String) : MarauderResponse()
     data class Error(val message: String) : MarauderResponse()
     data class AccessPointList(val aps: List<AccessPoint>) : MarauderResponse()
     data class StationList(val stations: List<Station>) : MarauderResponse()
     data class SsidList(val ssids: List<SSID>) : MarauderResponse()
+    data class BluetoothDeviceList(val devices: List<BluetoothDevice>) : MarauderResponse()
     data class Info(val info: DeviceInfo) : MarauderResponse()
     data class GpsInfo(val gps: GpsData) : MarauderResponse()
     data class PacketCount(val stats: PacketStats) : MarauderResponse()

@@ -53,13 +53,13 @@ jobs:
           ./gradlew assembleRelease --no-daemon --stacktrace
           
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: marauder-controller-debug
           path: MarauderController/app/build/outputs/apk/debug/app-debug.apk
           
       - name: Upload Release APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: marauder-controller-release
           path: MarauderController/app/build/outputs/apk/release/app-release-unsigned.apk
