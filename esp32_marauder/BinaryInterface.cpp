@@ -116,6 +116,57 @@ void BinaryInterface::handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len) {
         sendResponse(RESP_NACK, NULL, 0);
       }
       break;
+
+    case CMD_SCAN_AP:
+      wifi_scan_obj.StartScan(WIFI_SCAN_AP);
+      sendResponse(RESP_ACK, NULL, 0);
+      break;
+
+    case CMD_SCAN_STA:
+      wifi_scan_obj.StartScan(WIFI_SCAN_STATION);
+      sendResponse(RESP_ACK, NULL, 0);
+      break;
+
+    case CMD_STOP_SCAN:
+      wifi_scan_obj.StopScan(wifi_scan_obj.currentScanMode);
+      sendResponse(RESP_ACK, NULL, 0);
+      break;
+
+    case CMD_ATTACK:
+        if (len > 0) {
+            uint8_t attackType = payload[0];
+            uint8_t attackMode = WIFI_SCAN_OFF;
+            
+            // Map simple attack IDs to Internal Constants
+            if (attackType == 0x01) attackMode = WIFI_ATTACK_DEAUTH;
+            else if (attackType == 0x02) attackMode = WIFI_ATTACK_BEACON_SPAM;
+            else if (attackType == 0x03) attackMode = WIFI_ATTACK_RICK_ROLL;
+            
+            if (attackMode != WIFI_SCAN_OFF) {
+                wifi_scan_obj.StartScan(attackMode);
+                sendResponse(RESP_ACK, NULL, 0);
+            } else {
+                sendResponse(RESP_NACK, NULL, 0);
+            }
+        } else {
+            sendResponse(RESP_NACK, NULL, 0);
+        }
+        break;
+
+    case CMD_REBOOT:
+        sendResponse(RESP_ACK, NULL, 0);
+        delay(100);
+        ESP.restart();
+        break;
+
+    case CMD_GENERIC_REQ:
+        if (len > 0) {
+            wifi_scan_obj.StartScan(payload[0]);
+            sendResponse(RESP_ACK, NULL, 0);
+        } else {
+            sendResponse(RESP_NACK, NULL, 0);
+        }
+        break;
       
     case CMD_UPDATE_START:
       // UPDATE_START expects no payload

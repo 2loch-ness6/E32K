@@ -21,7 +21,14 @@ class BinaryInterface {
     const uint8_t END_BYTE = 0x5A;
     
     const uint8_t CMD_PING = 0x00;
+    const uint8_t CMD_SCAN_AP = 0x01;
+    const uint8_t CMD_SCAN_STA = 0x02;
+    const uint8_t CMD_STOP_SCAN = 0x03;
+    const uint8_t CMD_ATTACK = 0x04;
+    const uint8_t CMD_GET_CONFIG = 0x05;
+    const uint8_t CMD_REBOOT = 0x06;
     const uint8_t CMD_UPDATE_START = 0x07;
+    const uint8_t CMD_GENERIC_REQ = 0x10;
     
     const uint8_t RESP_ACK = 0x00;
     const uint8_t RESP_NACK = 0x01;
