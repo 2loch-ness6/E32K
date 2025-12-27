@@ -1,5 +1,4 @@
 // Top-level build file
-// Top-level build file
 buildscript {
     repositories {
         google()
@@ -16,10 +15,6 @@ allprojects {
         google()
         mavenCentral()
     }
-}
-
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
 }
 
 tasks.register("clean", Delete::class) {
