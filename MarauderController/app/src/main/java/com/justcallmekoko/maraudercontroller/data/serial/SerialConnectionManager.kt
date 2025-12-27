@@ -259,6 +259,26 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
             }
         }
     }
+
+    /**
+     * Send raw data chunk to device
+     */
+    fun sendRawData(data: ByteArray, length: Int) {
+        scope.launch {
+            try {
+                val port = serialPort ?: throw IOException("Not connected")
+                // Copy buffer if needed or just write the slice if the library supports it.
+                // usb-serial-for-android write takes a byte array and timeout. 
+                // We typically slice it if the array is larger than length, 
+                // but usually the caller passes a buffer of exact size or we write the whole thing.
+                // Given the caller usage (buffer read from stream), we should respect length.
+                val actualData = if (data.size == length) data else data.copyOf(length)
+                port.write(actualData, WRITE_TIMEOUT)
+            } catch (e: Exception) {
+                _connectionState.value = ConnectionState.Error("Send chunk failed: ${e.message}")
+            }
+        }
+    }
     
     // SerialInputOutputManager.Listener implementation
     override fun onNewData(data: ByteArray) {
