@@ -76,8 +76,83 @@ class MarauderRepository(context: Context) {
                 }
             }
         }
+
+        // Monitor binary data
+        scope.launch {
+            serialManager.binaryEvents.collect { packet ->
+                processBinaryPacket(packet)
+            }
+        }
     }
     
+    /**
+     * Process received binary packet
+     */
+    private fun processBinaryPacket(packet: MarauderBinaryProtocol.BinaryPacket) {
+        if (packet.cmd == MarauderBinaryProtocol.RESP_SCAN_DATA) {
+            parseScanData(packet.payload)
+        }
+    }
+
+    private fun parseScanData(payload: ByteArray) {
+        if (payload.isEmpty()) return
+        
+        val type = payload[0].toInt()
+        
+        // Type 0x01: Access Point
+        if (type == 0x01 && payload.size > 10) {
+            try {
+                // [Type:1][RSSI:1][Ch:1][MAC:6][SSID_Len:1][SSID:Var]
+                val rssi = payload[1].toByte().toInt()
+                val channel = payload[2].toInt() and 0xFF
+                
+                // Extract MAC
+                val macBytes = payload.copyOfRange(3, 9)
+                val mac = macBytes.joinToString(":") { "%02X".format(it) }
+                
+                val ssidLen = payload[9].toInt() and 0xFF
+                var ssid = ""
+                if (ssidLen > 0 && payload.size >= 10 + ssidLen) {
+                    ssid = String(payload, 10, ssidLen)
+                }
+                
+                // Create AP Object
+                val newAp = AccessPoint(
+                    ssid = ssid,
+                    bssid = mac,
+                    channel = channel,
+                    rssi = rssi,
+                    encryption = "UNK", // Binary protocol v1.1 doesn't send auth yet
+                    lastSeen = System.currentTimeMillis()
+                )
+                
+                updateAccessPointList(newAp)
+                
+            } catch (e: Exception) {
+                // Log parsing error
+            }
+        }
+    }
+
+    private fun updateAccessPointList(newAp: AccessPoint) {
+        val currentList = _accessPoints.value.toMutableList()
+        val index = currentList.indexOfFirst { it.bssid == newAp.bssid }
+        
+        if (index != -1) {
+            // Update existing
+            val existing = currentList[index]
+            // Keep existing selection and encryption if unknown
+            currentList[index] = newAp.copy(
+                selected = existing.selected,
+                encryption = if (newAp.encryption == "UNK") existing.encryption else newAp.encryption
+            )
+        } else {
+            // Add new
+            currentList.add(newAp)
+        }
+        _accessPoints.value = currentList
+    }
+
     /**
      * Find available devices
      */
