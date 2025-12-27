@@ -133,13 +133,32 @@ void BinaryInterface::handlePacket(uint8_t cmd, uint8_t* payload, uint8_t len) {
       break;
 
     case CMD_ATTACK:
-        if (len > 0) {
+        if (len == 14) {
+            uint8_t attackType = payload[0];
+            uint8_t channel = payload[1];
+            uint8_t* apMac = &payload[2];
+            uint8_t* staMac = &payload[8];
+            
+            if (attackType == 0x01) { // Deauth Manual
+                wifi_scan_obj.set_channel = channel;
+                memcpy(wifi_scan_obj.src_mac, apMac, 6);
+                
+                char macStr[18];
+                snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+                         staMac[0], staMac[1], staMac[2], staMac[3], staMac[4], staMac[5]);
+                wifi_scan_obj.dst_mac = String(macStr);
+                
+                wifi_scan_obj.StartScan(WIFI_ATTACK_DEAUTH_MANUAL);
+                sendResponse(RESP_ACK, NULL, 0);
+            } else {
+                sendResponse(RESP_NACK, NULL, 0);
+            }
+        } else if (len > 0) {
             uint8_t attackType = payload[0];
             uint8_t attackMode = WIFI_SCAN_OFF;
             
-            // Map simple attack IDs to Internal Constants
-            if (attackType == 0x01) attackMode = WIFI_ATTACK_DEAUTH;
-            else if (attackType == 0x02) attackMode = WIFI_ATTACK_BEACON_SPAM;
+            // Legacy simple triggers
+            if (attackType == 0x02) attackMode = WIFI_ATTACK_BEACON_SPAM;
             else if (attackType == 0x03) attackMode = WIFI_ATTACK_RICK_ROLL;
             
             if (attackMode != WIFI_SCAN_OFF) {

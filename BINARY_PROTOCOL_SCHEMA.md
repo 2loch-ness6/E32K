@@ -58,10 +58,13 @@ All multi-byte fields are **Little Endian** unless specified otherwise.
 
 #### `CMD_ATTACK` (0x04)
 *   **Description:** Start a specific attack.
-*   **Payload:** `[Type (1 Byte)] [Config (Optional)]`
-    *   **Type 0x01:** Deauth Attack (`WIFI_ATTACK_DEAUTH`)
-    *   **Type 0x02:** Beacon Spam (`WIFI_ATTACK_BEACON_SPAM`)
-    *   **Type 0x03:** Rick Roll (`WIFI_ATTACK_RICK_ROLL`)
+*   **Payload:** `[Type (1)] [Channel (1)] [AP_MAC (6)] [Station_MAC (6)]` (Total 14 Bytes)
+    *   **Type 0x01:** Deauth Attack (`WIFI_ATTACK_DEAUTH_MANUAL`)
+        *   `Channel`: Target Channel (1-14).
+        *   `AP_MAC`: Target Access Point BSSID.
+        *   `Station_MAC`: Target Station MAC (or `FF:FF:FF:FF:FF:FF` for broadcast).
+    *   **Type 0x02:** Beacon Spam (Implementation Pending)
+    *   **Type 0x03:** Rick Roll (Implementation Pending)
 *   **Response:** `RESP_ACK`.
 
 ---

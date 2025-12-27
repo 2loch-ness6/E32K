@@ -186,6 +186,11 @@ class MarauderViewModel(
     fun startAttack(type: AttackType, targetMac: String? = null, timeout: Int? = null) {
         repository.attack(type, targetMac, timeout)
     }
+
+    // Targeted Attack (Phase 3)
+    fun startTargetedAttack(type: Int, channel: Int, apMac: String, stationMac: String = "ff:ff:ff:ff:ff:ff") {
+        repository.sendBinaryAttack(type, channel, apMac, stationMac)
+    }
     
     fun stopAttack() {
         repository.stopScan() // Stop scan stops attacks too

@@ -511,6 +511,40 @@ class MarauderRepository(context: Context) {
         }
         sendCommand(MarauderCommands.buildAttackCommand(typeStr, targetMac, timeout = timeout))
     }
+
+    /**
+     * Send targeted attack command via binary protocol (Phase 3)
+     */
+    fun sendBinaryAttack(type: Int, channel: Int, apMac: String, stationMac: String) {
+        // Payload: [Type(1)][Channel(1)][AP_MAC(6)][Station_MAC(6)] = 14 Bytes
+        val payload = ByteArray(14)
+
+        payload[0] = type.toByte()
+        payload[1] = channel.toByte()
+
+        try {
+            // Parse AP MAC
+            val apParts = apMac.replace(":", "").chunked(2)
+            for (i in 0 until 6.coerceAtMost(apParts.size)) {
+                payload[2 + i] = apParts[i].toInt(16).toByte()
+            }
+
+            // Parse Station MAC
+            val staParts = stationMac.replace(":", "").chunked(2)
+            for (i in 0 until 6.coerceAtMost(staParts.size)) {
+                payload[8 + i] = staParts[i].toInt(16).toByte()
+            }
+        } catch (e: Exception) {
+            // Log error or ignore
+        }
+
+        val packet = MarauderBinaryProtocol.BinaryPacket(
+            MarauderBinaryProtocol.CMD_ATTACK,
+            payload.size,
+            payload
+        )
+        serialManager.sendBinaryCommand(packet)
+    }
     
     fun clearAccessPoints() {
         sendCommand(MarauderCommands.buildClearCommand(clearAps = true))
