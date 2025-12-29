@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Marauder Controller</string>
+    <string name="connection_status">Connection Status</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="scan_for_devices">Scan for Devices</string>
+    <string name="no_devices_found">No devices found</string>
+    <string name="device_connected">Device connected</string>
+    <string name="device_disconnected">Disconnected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="connection_error">Connection error</string>
+    <string name="usb_permission_denied">USB permission denied</string>
+    
+    <!-- Tabs -->
+    <string name="tab_wifi">WiFi</string>
+    <string name="tab_attacks">Attacks</string>
+    <string name="tab_lists">Lists</string>
+    <string name="tab_settings">Settings</string>
+    <string name="tab_scripts">Scripts</string>
+    <string name="tab_export">Export</string>
+    <string name="tab_sessions">Sessions</string>
+    
+    <!-- Scanning -->
+    <string name="scan_access_points">Scan Access Points</string>
+    <string name="scan_stations">Scan Stations</string>
+    <string name="scan_bluetooth">Scan Bluetooth</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="scanning">Scanning...</string>
+    
+    <!-- Attacks -->
+    <string name="deauth_attack">Deauth Attack</string>
+    <string name="beacon_spam">Beacon Spam</string>
+    <string name="probe_attack">Probe Attack</string>
+    <string name="rick_roll">Rick Roll</string>
+    <string name="ap_spam">AP Spam</string>
+    <string name="mimic_attack">Mimic Attack</string>
+    <string name="start_attack">Start Attack</string>
+    <string name="stop_attack">Stop Attack</string>
+    <string name="custom_attack">Custom Attack</string>
+    <string name="attack_config">Attack Configuration</string>
+    
+    <!-- Lists -->
+    <string name="access_points">Access Points</string>
+    <string name="stations">Stations</string>
+    <string name="ssids">SSIDs</string>
+    <string name="bluetooth_devices">Bluetooth Devices</string>
+    <string name="select_all">Select All</string>
+    <string name="deselect_all">Deselect All</string>
+    <string name="clear">Clear</string>
+    <string name="add_ssid">Add SSID</string>
+    <string name="generate_random">Generate Random</string>
+    
+    <!-- Settings -->
+    <string name="app_settings">App Settings</string>
+    <string name="theme">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System Default</string>
+    <string name="auto_connect">Auto Connect</string>
+    <string name="auto_connect_desc">Automatically connect to last device</string>
+    <string name="gps_integration">GPS Integration</string>
+    <string name="gps_integration_desc">Enable wardriving and location tracking</string>
+    <string name="bluetooth_support">Bluetooth Support</string>
+    <string name="bluetooth_support_desc">Enable Bluetooth scanning and attacks</string>
+    <string name="channel">Channel</string>
+    <string name="device_info">Device Information</string>
+    <string name="device_control">Device Control</string>
+    <string name="gps_data">GPS Data</string>
+    <string name="reboot_device">Reboot Marauder</string>
+    <string name="terminal">Terminal</string>
+    <string name="language">Language</string>
+    
+    <!-- Sessions -->
+    <string name="sessions">Sessions</string>
+    <string name="save_session">Save Session</string>
+    <string name="load_session">Load Session</string>
+    <string name="delete_session">Delete Session</string>
+    <string name="export_session">Export Session</string>
+    <string name="session_name">Session Name</string>
+    <string name="no_sessions">No saved sessions</string>
+    
+    <!-- Export -->
+    <string name="export">Export</string>
+    <string name="export_access_points">Export Access Points</string>
+    <string name="export_stations">Export Stations</string>
+    <string name="export_terminal_log">Export Terminal Log</string>
+    <string name="export_packet_stats">Export Packet Stats</string>
+    <string name="export_wardriving">Export Wardriving Data</string>
+    <string name="export_format">Export Format</string>
+    <string name="export_path">Export Path</string>
+    <string name="export_success">Exported successfully</string>
+    <string name="export_failed">Export failed</string>
+    
+    <!-- Scripts -->
+    <string name="scripts">Scripts</string>
+    <string name="script_editor">Script Editor</string>
+    <string name="run_script">Run Script</string>
+    <string name="stop_script">Stop Script</string>
+    <string name="save_script">Save Script</string>
+    <string name="delete_script">Delete Script</string>
+    <string name="script_name">Script Name</string>
+    <string name="add_command">Add Command</string>
+    <string name="delay_ms">Delay (ms)</string>
+    <string name="repeat">Repeat</string>
+    <string name="repeat_count">Repeat Count</string>
+    <string name="no_scripts">No saved scripts</string>
+    <string name="create_example_scripts">Create Example Scripts</string>
+    
+    <!-- Packet Visualization -->
+    <string name="packet_stats">Packet Statistics</string>
+    <string name="packet_visualization">Packet Visualization</string>
+    <string name="beacon_packets">Beacon Packets</string>
+    <string name="probe_packets">Probe Packets</string>
+    <string name="deauth_packets">Deauth Packets</string>
+    <string name="eapol_packets">EAPOL Packets</string>
+    <string name="data_packets">Data Packets</string>
+    <string name="total_packets">Total Packets</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="refresh">Refresh</string>
+    <string name="save">Save</string>
+    <string name="send">Send</string>
+    <string name="change">Change</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="search">Search</string>
+    <string name="filter">Filter</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="help">Help</string>
+    
+    <!-- Info -->
+    <string name="version">Version</string>
+    <string name="hardware">Hardware</string>
+    <string name="free_heap">Free Heap</string>
+    <string name="uptime">Uptime</string>
+    <string name="battery">Battery</string>
+    <string name="temperature">Temperature</string>
+    
+    <!-- Errors -->
+    <string name="error">Error</string>
+    <string name="error_no_device">No device connected</string>
+    <string name="error_command_failed">Command failed</string>
+    <string name="error_save_failed">Save failed</string>
+    <string name="error_load_failed">Load failed</string>
+</resources>

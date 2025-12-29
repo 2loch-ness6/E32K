@@ -1,0 +1,21 @@
+Downloading https://services.gradle.org/distributions/gradle-8.6-bin.zip
+..............................................................................................................................
+Unzipping /root/.gradle/wrapper/dists/gradle-8.6-bin/afr5mpiioh2wthjmwnkmdsd5w/gradle-8.6-bin.zip to /root/.gradle/wrapper/dists/gradle-8.6-bin/afr5mpiioh2wthjmwnkmdsd5w
+Set executable permissions for: /root/.gradle/wrapper/dists/gradle-8.6-bin/afr5mpiioh2wthjmwnkmdsd5w/gradle-8.6/bin/gradle
+
+Welcome to Gradle 8.6!
+
+Here are the highlights of this release:
+ - Configurable encryption key for configuration cache
+ - Build init improvements
+ - Build authoring improvements
+
+For more details see https://docs.gradle.org/8.6/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Configure project :
+w: file:///root/E32K/MarauderController/build.gradle.kts:9:24: 'getter for buildDir: File!' is deprecated. Deprecated in Java
+WARNING: The following problems were found when resolving the SDK location:
+Where: sdk.dir property in local.properties file. Problem: Directory does not exist
+
