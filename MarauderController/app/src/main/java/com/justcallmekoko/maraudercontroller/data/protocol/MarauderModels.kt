@@ -22,6 +22,7 @@ data class AccessPoint(
 @Serializable
 data class Station(
     val mac: String = "",
+    val bssid: String = "",
     val rssi: Int = 0,
     val channel: Int = 0,
     val lastSeen: Long = 0,

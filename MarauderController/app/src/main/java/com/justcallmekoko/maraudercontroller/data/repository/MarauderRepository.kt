@@ -163,6 +163,7 @@ class MarauderRepository(context: Context) {
 
                 val newSta = Station(
                     mac = mac,
+                    bssid = bssid,
                     rssi = rssi,
                     channel = channel,
                     lastSeen = System.currentTimeMillis()

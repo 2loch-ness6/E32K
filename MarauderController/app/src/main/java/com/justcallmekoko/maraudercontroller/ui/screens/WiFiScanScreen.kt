@@ -1,6 +1,8 @@
 package com.justcallmekoko.maraudercontroller.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -147,7 +149,7 @@ fun WiFiScanScreen(viewModel: MarauderViewModel) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AccessPointCard(
     index: Int,
@@ -155,8 +157,15 @@ fun AccessPointCard(
     onSelect: () -> Unit,
     onDeauth: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
-        onClick = onSelect,
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onSelect,
+                onLongClick = { showMenu = true }
+            ),
         colors = CardDefaults.cardColors(
             containerColor = if (ap.selected) 
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f) 
@@ -244,7 +253,7 @@ fun AccessPointCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 Row {
-                   // Deauth Button
+                   // Deauth Button (Quick Action)
                     IconButton(
                         onClick = onDeauth,
                         modifier = Modifier.size(24.dp)
@@ -257,6 +266,32 @@ fun AccessPointCard(
                     }
                 }
             }
+        }
+        
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Deauth Attack") },
+                onClick = {
+                    onDeauth()
+                    showMenu = false
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                }
+            )
+             DropdownMenuItem(
+                text = { Text("Copy MAC") },
+                onClick = {
+                    // TODO: Implement copy
+                    showMenu = false
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.ContentCopy, contentDescription = null)
+                }
+            )
         }
     }
 }
