@@ -1,0 +1,4 @@
+# Set MACs
+Set MACs allows the user to set the MAC address of their Marauder's Access Point and Station WiFi interfaces. This allows the ESP32 to appear as a different device when performing client or server operations such as hosting access points for Evil Portal. For example, if you set your ESP32 to the same MAC as the BSSID of a scanned access point, your Evil Portal will then appear as that BSSID.
+
+Your station MAC may also be set prior to joining a WLAN, making your Marauder appear as a different device on the network. Depending on the network configuration, this will likely result in a different IP address being issued to your Marauder device.

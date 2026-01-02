@@ -1,0 +1,2 @@
+# GPS Tracker
+The GPS Tracker uses the attached GPS module to log location data and save it to a .gpx file on SD card. This file can be imported into applications [GPX Studio](https://gpx.studio/app#0/0/0) to visualize the data on a map. For more information on how to install or use a GPS module for Marauder, see [GPS Modification](gps-modification).

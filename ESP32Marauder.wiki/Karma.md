@@ -1,0 +1,2 @@
+# Karma
+The KARMA attack function creates an Evil Portal using the SSID from sniffed probe requests at the rogue AP name. Before executing an attack, you must sniff probe requests and select an HTML file from your SD card. For more information, see [Evil Portal](evilportal)
