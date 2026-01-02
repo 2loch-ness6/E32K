@@ -1,2 +1,26 @@
 build/
+sdkconfig
 sdkconfig.old
+*.bin
+*.hex
+*.elf
+*.map
+*.zip
+*.tar.gz
+*.7z
+*.exe
+*.EXE
+.DS_Store
+Thumbs.db
+esp-idf-*/
+managed_components/
+dependencies.lock
+Release Bins/
+E32K/
+bin/
+C5_Py_Flasher/
+TestFile/
+bootloaders/
+FlashFiles/
+usb-serial-for-android-3.10.0/
+# Keep MarauderController, PCBs, mechanical, libraries, pictures
