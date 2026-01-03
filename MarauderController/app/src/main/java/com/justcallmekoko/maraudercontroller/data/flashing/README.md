@@ -1,6 +1,6 @@
 # ESP32 Flasher Implementation
 
-This directory contains the complete ESP32 firmware flashing implementation for the E32K/MarauderController Android app.
+This directory contains the complete ESP32 firmware flashing implementation for the MarauderController Android app.
 
 ## Overview
 
@@ -69,16 +69,15 @@ Main flasher implementation with progress tracking.
 2. SYNCING - Establishing communication
 3. PREPARING_FLASH - Sending flash begin command
 4. WRITING_FLASH - Writing firmware blocks
-5. VERIFYING - Optional verification step
-6. FINISHING - Completing flash operation
-7. COMPLETE - Success
-8. ERROR - Failure state
+5. FINISHING - Completing flash operation
+6. COMPLETE - Success
+7. ERROR - Failure state
 
 **Features:**
 - Asynchronous flashing with Kotlin coroutines
 - Real-time progress tracking via StateFlow
 - Block-by-block writing with padding
-- Configurable flash address and verification
+- Configurable flash address
 - Retry logic for sync operation
 - Timeout handling for all operations
 
@@ -113,8 +112,7 @@ flasher.progress.collect { progress ->
 val firmware = loadFirmwareBytes() // Load firmware binary
 val result = flasher.flashFirmware(
     firmware = firmware,
-    address = 0x10000, // App partition address
-    verify = true
+    address = 0x10000 // App partition address
 )
 
 if (result.isSuccess) {
@@ -218,4 +216,4 @@ Potential additions not yet implemented:
 
 ## License
 
-This implementation is part of the E32K project and follows the project's license terms.
+This implementation is part of the ESP32 Marauder project and follows the project's license terms.

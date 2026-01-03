@@ -66,8 +66,8 @@ object SlipProtocol {
         while (i < encoded.size) {
             when (encoded[i]) {
                 END -> {
-                    if (inFrame && decoded.isNotEmpty()) {
-                        // Frame complete
+                    if (inFrame) {
+                        // Frame complete (may be empty)
                         break
                     }
                     inFrame = true

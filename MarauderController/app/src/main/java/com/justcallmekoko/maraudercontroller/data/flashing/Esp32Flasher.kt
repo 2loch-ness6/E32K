@@ -1,5 +1,6 @@
 package com.justcallmekoko.maraudercontroller.data.flashing
 
+import android.util.Log
 import com.hoho.android.usbserial.driver.UsbSerialPort
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,10 @@ class Esp32Flasher(
     
     private val _progress = MutableStateFlow(FlashProgress())
     val progress: StateFlow<FlashProgress> = _progress
+    
+    companion object {
+        private const val TAG = "Esp32Flasher"
+    }
     
     data class FlashProgress(
         val stage: FlashStage = FlashStage.IDLE,
@@ -35,7 +40,6 @@ class Esp32Flasher(
         SYNCING,
         PREPARING_FLASH,
         WRITING_FLASH,
-        VERIFYING,
         FINISHING,
         COMPLETE,
         ERROR
@@ -46,12 +50,10 @@ class Esp32Flasher(
      * 
      * @param firmware Firmware binary data
      * @param address Flash address (default 0x10000 for app)
-     * @param verify Whether to verify after flashing
      */
     suspend fun flashFirmware(
         firmware: ByteArray,
-        address: Int = 0x10000,
-        verify: Boolean = true
+        address: Int = 0x10000
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Step 1: Enter bootloader
@@ -78,13 +80,6 @@ class Esp32Flasher(
             updateProgress(FlashStage.FINISHING, "Finishing flash operation...")
             finishFlash(reboot = true).getOrThrow()
             
-            // Step 6: Verify (optional)
-            if (verify) {
-                updateProgress(FlashStage.VERIFYING, "Verifying flash...")
-                // Verification logic would go here
-                delay(500)
-            }
-            
             updateProgress(FlashStage.COMPLETE, "Flash complete!")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -108,15 +103,21 @@ class Esp32Flasher(
                 // Read response
                 val response = readResponse(1000)
                 if (response != null) {
-                    val decoded = SlipProtocol.decode(response)
-                    val parsed = Esp32Commands.parseResponse(decoded)
-                    
-                    if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
-                        return Result.success(Unit)
+                    try {
+                        val decoded = SlipProtocol.decode(response)
+                        val parsed = Esp32Commands.parseResponse(decoded)
+                        
+                        if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
+                            return Result.success(Unit)
+                        }
+                    } catch (e: SlipDecodeException) {
+                        Log.w(TAG, "Failed to decode SLIP response during sync", e)
                     }
+                } else {
+                    Log.d(TAG, "No response received during sync attempt")
                 }
             } catch (e: Exception) {
-                // Try again
+                Log.w(TAG, "Sync attempt failed", e)
                 delay(100)
             }
         }
@@ -142,20 +143,28 @@ class Esp32Flasher(
             
             val response = readResponse(3000)
             if (response != null) {
-                val decoded = SlipProtocol.decode(response)
-                val parsed = Esp32Commands.parseResponse(decoded)
-                
-                if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
-                    _progress.value = _progress.value.copy(
-                        totalBytes = size,
-                        totalBlocks = blocks
-                    )
-                    return Result.success(Unit)
+                try {
+                    val decoded = SlipProtocol.decode(response)
+                    val parsed = Esp32Commands.parseResponse(decoded)
+                    
+                    if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
+                        _progress.value = _progress.value.copy(
+                            totalBytes = size,
+                            totalBlocks = blocks
+                        )
+                        return Result.success(Unit)
+                    }
+                } catch (e: SlipDecodeException) {
+                    Log.e(TAG, "Failed to decode SLIP response in prepareFlash", e)
+                    return Result.failure(e)
                 }
+            } else {
+                Log.e(TAG, "No response received in prepareFlash")
             }
             
             return Result.failure(IOException("Failed to prepare flash"))
         } catch (e: Exception) {
+            Log.e(TAG, "Exception in prepareFlash", e)
             return Result.failure(e)
         }
     }
@@ -185,12 +194,21 @@ class Esp32Flasher(
                 // Read response
                 val response = readResponse(5000)
                 if (response != null) {
-                    val decoded = SlipProtocol.decode(response)
-                    val parsed = Esp32Commands.parseResponse(decoded)
-                    
-                    if (parsed?.status != Esp32Commands.ResponseStatus.SUCCESS) {
-                        return Result.failure(IOException("Flash write failed at block $i"))
+                    try {
+                        val decoded = SlipProtocol.decode(response)
+                        val parsed = Esp32Commands.parseResponse(decoded)
+                        
+                        if (parsed?.status != Esp32Commands.ResponseStatus.SUCCESS) {
+                            Log.e(TAG, "Flash write failed at block $i with status: ${parsed?.status}")
+                            return Result.failure(IOException("Flash write failed at block $i"))
+                        }
+                    } catch (e: SlipDecodeException) {
+                        Log.e(TAG, "Failed to decode SLIP response at block $i", e)
+                        return Result.failure(IOException("Failed to decode response at block $i", e))
                     }
+                } else {
+                    Log.e(TAG, "No response received for block $i")
+                    return Result.failure(IOException("No response received for block $i"))
                 }
                 
                 // Update progress
@@ -205,6 +223,7 @@ class Esp32Flasher(
             
             return Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "Exception in writeFlashData", e)
             return Result.failure(e)
         }
     }
@@ -222,16 +241,24 @@ class Esp32Flasher(
             
             val response = readResponse(1000)
             if (response != null) {
-                val decoded = SlipProtocol.decode(response)
-                val parsed = Esp32Commands.parseResponse(decoded)
-                
-                if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
-                    return Result.success(Unit)
+                try {
+                    val decoded = SlipProtocol.decode(response)
+                    val parsed = Esp32Commands.parseResponse(decoded)
+                    
+                    if (parsed?.status == Esp32Commands.ResponseStatus.SUCCESS) {
+                        return Result.success(Unit)
+                    }
+                } catch (e: SlipDecodeException) {
+                    Log.e(TAG, "Failed to decode SLIP response in finishFlash", e)
+                    return Result.failure(e)
                 }
+            } else {
+                Log.e(TAG, "No response received in finishFlash")
             }
             
             return Result.failure(IOException("Failed to finish flash"))
         } catch (e: Exception) {
+            Log.e(TAG, "Exception in finishFlash", e)
             return Result.failure(e)
         }
     }
@@ -247,9 +274,11 @@ class Esp32Flasher(
                 if (len > 0) {
                     buffer.copyOf(len)
                 } else {
+                    Log.d(TAG, "No data read from serial port")
                     null
                 }
             } catch (e: Exception) {
+                Log.w(TAG, "Exception reading from serial port: ${e.message}", e)
                 null
             }
         }

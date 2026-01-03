@@ -223,6 +223,11 @@ object Esp32Commands {
         val size = buffer.short.toInt()
         val value = buffer.int
         
+        // Ensure that the declared size does not exceed the remaining data
+        if (size < 0 || buffer.remaining() < size) {
+            return null
+        }
+        
         val responseData = ByteArray(size)
         buffer.get(responseData)
         
