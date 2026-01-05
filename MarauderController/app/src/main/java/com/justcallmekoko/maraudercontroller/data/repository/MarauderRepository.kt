@@ -3,6 +3,9 @@ package com.justcallmekoko.maraudercontroller.data.repository
 import android.content.Context
 import com.justcallmekoko.maraudercontroller.data.protocol.*
 import com.justcallmekoko.maraudercontroller.data.serial.SerialConnectionManager
+import com.justcallmekoko.maraudercontroller.data.serial.ConnectionRecoveryManager
+import com.justcallmekoko.maraudercontroller.data.serial.CommandRetryManager
+import com.justcallmekoko.maraudercontroller.data.serial.SerialException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +27,8 @@ class MarauderRepository(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val serialManager = SerialConnectionManager(context)
     private val parser = MarauderProtocolParser()
+    private val recoveryManager = ConnectionRecoveryManager()
+    private val retryManager = CommandRetryManager()
     
     // Connection state
     val connectionState: StateFlow<SerialConnectionManager.ConnectionState> = 
@@ -68,6 +73,10 @@ class MarauderRepository(context: Context) {
     
     private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
     val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
+    
+    // Recovery state
+    val recoveryState: StateFlow<ConnectionRecoveryManager.RecoveryState> = 
+        recoveryManager.recoveryState
     
     private val responseBuffer = mutableListOf<String>()
     private var listMode: ListMode? = null
@@ -835,6 +844,16 @@ class MarauderRepository(context: Context) {
     }
     
     fun release() {
+        // Stop any ongoing operations
+        liveScanJob?.cancel()
+        
+        // Release recovery manager
+        recoveryManager.release()
+        
+        // Release serial manager
         serialManager.release()
+        
+        // Cancel scope
+        scope.cancel()
     }
 }
