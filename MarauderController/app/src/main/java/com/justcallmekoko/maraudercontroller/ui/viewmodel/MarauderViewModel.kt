@@ -34,6 +34,7 @@ class MarauderViewModel(
     val terminalOutput: StateFlow<List<String>> = repository.terminalOutput
     val currentChannel: StateFlow<Int> = repository.currentChannel
     val fileList: StateFlow<List<MarauderRepository.FileEntry>> = repository.fileList
+    val downloadProgress: StateFlow<DownloadProgress?> = repository.downloadProgress
     
     // Preferences
     val themeModeFlow: Flow<PreferencesManager.ThemeMode> = preferencesManager.themeModeFlow

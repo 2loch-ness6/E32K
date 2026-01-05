@@ -66,6 +66,9 @@ class MarauderRepository(context: Context) {
     private val _fileList = MutableStateFlow<List<FileEntry>>(emptyList())
     val fileList: StateFlow<List<FileEntry>> = _fileList.asStateFlow()
     
+    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
+    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
+    
     private val responseBuffer = mutableListOf<String>()
     private var listMode: ListMode? = null
     private var liveScanJob: Job? = null
@@ -665,6 +668,19 @@ class MarauderRepository(context: Context) {
     }
 
     fun downloadFile(filename: String): Flow<ByteArray> = flow {
+        // Get file size from the list
+        val fileEntry = _fileList.value.find { it.name == filename }
+        val totalSize = fileEntry?.size ?: 0L
+        var downloadedSize = 0L
+        
+        // Initialize progress
+        _downloadProgress.value = DownloadProgress(
+            filename = filename,
+            bytesDownloaded = 0,
+            totalBytes = totalSize,
+            progress = 0f
+        )
+        
         // Request download
         val nameBytes = filename.toByteArray()
         val payload = ByteArray(1 + nameBytes.size)
@@ -682,15 +698,43 @@ class MarauderRepository(context: Context) {
             withTimeoutOrNull(60000) { // 60s timeout just in case
                 _fileDownloadChunks.collect { chunk ->
                     if (chunk.seq == -1) {
+                        // EOF reached - mark as complete
+                        _downloadProgress.value = DownloadProgress(
+                            filename = filename,
+                            bytesDownloaded = downloadedSize,
+                            totalBytes = totalSize,
+                            progress = 1.0f,
+                            isComplete = true
+                        )
                         throw CancellationException("EOF")
                     }
+                    downloadedSize += chunk.data.size
+                    val progress = if (totalSize > 0) downloadedSize.toFloat() / totalSize else 0f
+                    
+                    // Update progress
+                    _downloadProgress.value = DownloadProgress(
+                        filename = filename,
+                        bytesDownloaded = downloadedSize,
+                        totalBytes = totalSize,
+                        progress = progress
+                    )
+                    
                     emit(chunk.data)
                 }
             }
         } catch (e: CancellationException) {
-            // Normal end of stream
+            // Normal end of stream - already marked complete above
         } catch (e: Exception) {
-            // Error
+            // Error occurred
+            _downloadProgress.value = DownloadProgress(
+                filename = filename,
+                bytesDownloaded = downloadedSize,
+                totalBytes = totalSize,
+                progress = downloadedSize.toFloat() / totalSize.coerceAtLeast(1),
+                isComplete = false,
+                error = e.message ?: "Download failed"
+            )
+            throw e
         }
     }
     
