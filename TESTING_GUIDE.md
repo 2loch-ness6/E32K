@@ -25,14 +25,14 @@ This guide covers testing procedures for the ESP32 Marauder firmware and Android
 **Prerequisites:**
 - Arduino IDE or Arduino CLI
 - ESP32 board support package
-- Required libraries (see GEMINI.md)
+- Required libraries (see .github/workflows/build_parallel.yml and the repository coding guidelines for the full pinned list)
 
 **Build Steps:**
 ```bash
 # Using Arduino CLI (recommended for CI)
 arduino-cli compile \
-  --fqbn esp32:esp32:esp32 \
-  --build-property compiler.cpp.extra_flags='-DESP32_LDDB' \
+  --fqbn esp32:esp32:d32:PartitionScheme=min_spiffs \
+  --build-property compiler.cpp.extra_flags='-DMARAUDER_V4' \
   esp32_marauder/esp32_marauder.ino
 
 # Check for errors
@@ -426,13 +426,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Arduino CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh
-      - name: Compile firmware
+          echo "$PWD/bin" >> $GITHUB_PATH
+
+      - name: Install ESP32 core 2.0.11
         run: |
-          arduino-cli core install esp32:esp32
-          arduino-cli compile --fqbn esp32:esp32:esp32 esp32_marauder/esp32_marauder.ino
+          arduino-cli config init
+          arduino-cli core update-index --additional-urls https://github.com/espressif/arduino-esp32/releases/download/2.0.11/package_esp32_dev_index.json
+          arduino-cli core install esp32:esp32@2.0.11 --additional-urls https://github.com/espressif/arduino-esp32/releases/download/2.0.11/package_esp32_dev_index.json
+
+      - name: Pre-build validation (TestFile.ino)
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:d32 \
+            TestFile/TestFile.ino
+
+      - name: Install required libraries (pinned versions)
+        run: |
+          mkdir -p CustomLibraries
+          cd CustomLibraries
+          git clone --branch 1.6 https://github.com/marian-craciunescu/ESP32Ping.git
+          git clone --branch v3.4.8 https://github.com/ESP32Async/AsyncTCP.git
+          git clone --branch v2.0.6 https://github.com/stevemarple/MicroNMEA.git
+          git clone --branch v3.8.1 https://github.com/ESP32Async/ESPAsyncWebServer.git
+          git clone --branch V2.5.34 https://github.com/Bodmer/TFT_eSPI.git
+          git clone --branch v1.4 https://github.com/PaulStoffregen/XPT2046_Touchscreen.git
+          git clone --branch 3.0.0 https://github.com/lvgl/lv_arduino.git
+          git clone --branch 1.8.0 https://github.com/Bodmer/JPEGDecoder.git
+          git clone --branch 1.3.8 https://github.com/h2zero/NimBLE-Arduino.git
+          git clone --branch 1.12.0 https://github.com/adafruit/Adafruit_NeoPixel.git
+          git clone --branch 6.18.2 https://github.com/bblanchon/ArduinoJson.git
+          git clone --branch 1.3.3 https://github.com/ivanseidel/LinkedList.git
+          git clone --branch 8.1.0 https://github.com/plerup/espsoftwareserial.git
+          git clone --branch 1.15.0 https://github.com/adafruit/Adafruit_BusIO.git
+          git clone --branch 1.0.2 https://github.com/adafruit/Adafruit_MAX1704X.git
+
+      - name: Configure TFT_eSPI
+        run: |
+          TFT_ESPI_DIR="CustomLibraries/TFT_eSPI"
+          cp User_Setup_og_marauder.h "$TFT_ESPI_DIR/"
+          sed -i 's/^\/\/#include <User_Setup_og_marauder.h>/#include <User_Setup_og_marauder.h>/' "$TFT_ESPI_DIR/User_Setup_Select.h"
+
+      - name: Patch platform.txt with zmuldefs
+        run: |
+          PLATFORM_TXT="$HOME/.arduino15/packages/esp32/hardware/esp32/2.0.11/platform.txt"
+          sed -i 's/compiler.c.elf.libs.esp32c3=/compiler.c.elf.libs.esp32c3=-zmuldefs /' "$PLATFORM_TXT"
+          sed -i 's/compiler.c.elf.libs.esp32s3=/compiler.c.elf.libs.esp32s3=-zmuldefs /' "$PLATFORM_TXT"
+          sed -i 's/compiler.c.elf.libs.esp32s2=/compiler.c.elf.libs.esp32s2=-zmuldefs /' "$PLATFORM_TXT"
+          sed -i 's/compiler.c.elf.libs.esp32=/compiler.c.elf.libs.esp32=-zmuldefs /' "$PLATFORM_TXT"
+
+      - name: Compile ESP32 Marauder firmware
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:d32:PartitionScheme=min_spiffs \
+            --build-property compiler.cpp.extra_flags='-DMARAUDER_V4' \
+            esp32_marauder/esp32_marauder.ino
 ```
 
 ## 9. Test Documentation

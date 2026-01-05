@@ -20,7 +20,6 @@ class ConnectionRecoveryManager(
     val recoveryState: StateFlow<RecoveryState> = _recoveryState.asStateFlow()
     
     private var healthCheckJob: Job? = null
-    private var reconnectJob: Job? = null
     
     sealed class RecoveryState {
         object Idle : RecoveryState()
@@ -69,8 +68,6 @@ class ConnectionRecoveryManager(
      * Attempt to reconnect with exponential backoff
      */
     suspend fun attemptReconnect(reconnectAction: suspend () -> Boolean): Boolean {
-        reconnectJob?.cancel()
-        
         return withContext(scope.coroutineContext) {
             for (attempt in 1..reconnectAttempts) {
                 _recoveryState.value = RecoveryState.Reconnecting(attempt, reconnectAttempts)
@@ -85,9 +82,9 @@ class ConnectionRecoveryManager(
                     // Log error but continue trying
                 }
                 
-                // Exponential backoff: 2s, 4s, 8s, etc.
+                // Exponential backoff: 4s, 8s, 16s, etc.
                 if (attempt < reconnectAttempts) {
-                    val delayTime = reconnectDelayMs * (1 shl (attempt - 1))
+                    val delayTime = reconnectDelayMs * (1 shl attempt)
                     delay(delayTime)
                 }
             }
@@ -101,7 +98,6 @@ class ConnectionRecoveryManager(
      * Cancel any ongoing recovery operations
      */
     fun cancelRecovery() {
-        reconnectJob?.cancel()
         healthCheckJob?.cancel()
         _recoveryState.value = RecoveryState.Idle
     }
@@ -182,9 +178,9 @@ class CommandQueueManager {
      */
     suspend fun <T> executeExclusive(command: suspend () -> T): T {
         commandMutex.lock()
-        _queueSize.value++
         
         try {
+            _queueSize.value++
             return command()
         } finally {
             _queueSize.value--

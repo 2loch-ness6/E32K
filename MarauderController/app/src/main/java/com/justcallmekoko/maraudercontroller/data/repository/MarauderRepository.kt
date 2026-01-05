@@ -5,7 +5,6 @@ import com.justcallmekoko.maraudercontroller.data.protocol.*
 import com.justcallmekoko.maraudercontroller.data.serial.SerialConnectionManager
 import com.justcallmekoko.maraudercontroller.data.serial.ConnectionRecoveryManager
 import com.justcallmekoko.maraudercontroller.data.serial.CommandRetryManager
-import com.justcallmekoko.maraudercontroller.data.serial.SerialException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -739,11 +738,17 @@ class MarauderRepository(context: Context) {
                 filename = filename,
                 bytesDownloaded = downloadedSize,
                 totalBytes = totalSize,
-                progress = downloadedSize.toFloat() / totalSize.coerceAtLeast(1),
+                progress = if (totalSize > 0) downloadedSize.toFloat() / totalSize else 0f,
                 isComplete = false,
                 error = e.message ?: "Download failed"
             )
             throw e
+        } finally {
+            // Clear progress state after download completes or fails
+            scope.launch {
+                delay(2000) // Keep visible for 2 seconds
+                _downloadProgress.value = null
+            }
         }
     }
     

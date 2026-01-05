@@ -78,7 +78,7 @@ Transform the ESP32 Marauder into a state-of-the-art wireless security toolkit w
 
 **Goal:** Deep integration, error handling, and production-ready quality
 
-### Current Status: 75% Complete
+### Current Status: 60% Complete
 
 #### Completed Features
 - ✅ Download progress tracking (DownloadProgress model)
@@ -88,8 +88,8 @@ Transform the ESP32 Marauder into a state-of-the-art wireless security toolkit w
 - ✅ INTEGRATION_GUIDE.md (12.5KB)
 - ✅ TESTING_GUIDE.md (12.4KB)
 - ✅ API_REFERENCE.md (14.5KB)
-- ✅ ConnectionRecovery.kt for automatic reconnection
-- ✅ CommandRetryManager for failed command retry
+- ✅ ConnectionRecovery.kt architecture designed
+- ✅ CommandRetryManager architecture designed
 - ✅ Custom exception types for better error handling
 
 #### In Progress
@@ -99,9 +99,10 @@ Transform the ESP32 Marauder into a state-of-the-art wireless security toolkit w
 - 🔄 Comprehensive unit tests
 
 #### Remaining Tasks
-- [ ] Integrate ConnectionRecoveryManager into Repository
-- [ ] Add retry logic for critical commands
+- [ ] Integrate ConnectionRecoveryManager into Repository methods
+- [ ] Add retry logic for critical commands (ping, scan, attack)
 - [ ] Implement health check pings
+- [ ] Wire up automatic reconnection on connection loss
 - [ ] Write unit tests for protocol parsing
 - [ ] Create integration test suite
 - [ ] Add performance profiling

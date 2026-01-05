@@ -53,7 +53,7 @@ fun FileScreen(viewModel: MarauderViewModel) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(
                     modifier = Modifier
