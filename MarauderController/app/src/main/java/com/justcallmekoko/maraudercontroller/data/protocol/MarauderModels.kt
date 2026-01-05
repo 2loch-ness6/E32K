@@ -156,3 +156,18 @@ sealed class MarauderResponse {
     data class DeviceVersionInfo(val version: String, val hardware: String, val freeHeap: Long) : MarauderResponse()
     object Prompt : MarauderResponse()
 }
+
+/**
+ * Download progress tracking for file transfers
+ */
+data class DownloadProgress(
+    val filename: String,
+    val bytesDownloaded: Long,
+    val totalBytes: Long,
+    val progress: Float, // 0.0 to 1.0
+    val isComplete: Boolean = false,
+    val error: String? = null
+) {
+    val progressPercentage: Int
+        get() = (progress * 100).toInt()
+}

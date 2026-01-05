@@ -3,6 +3,8 @@ package com.justcallmekoko.maraudercontroller.data.repository
 import android.content.Context
 import com.justcallmekoko.maraudercontroller.data.protocol.*
 import com.justcallmekoko.maraudercontroller.data.serial.SerialConnectionManager
+import com.justcallmekoko.maraudercontroller.data.serial.ConnectionRecoveryManager
+import com.justcallmekoko.maraudercontroller.data.serial.CommandRetryManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,8 @@ class MarauderRepository(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val serialManager = SerialConnectionManager(context)
     private val parser = MarauderProtocolParser()
+    private val recoveryManager = ConnectionRecoveryManager()
+    private val retryManager = CommandRetryManager()
     
     // Connection state
     val connectionState: StateFlow<SerialConnectionManager.ConnectionState> = 
@@ -65,6 +69,13 @@ class MarauderRepository(context: Context) {
 
     private val _fileList = MutableStateFlow<List<FileEntry>>(emptyList())
     val fileList: StateFlow<List<FileEntry>> = _fileList.asStateFlow()
+    
+    private val _downloadProgress = MutableStateFlow<DownloadProgress?>(null)
+    val downloadProgress: StateFlow<DownloadProgress?> = _downloadProgress.asStateFlow()
+    
+    // Recovery state
+    val recoveryState: StateFlow<ConnectionRecoveryManager.RecoveryState> = 
+        recoveryManager.recoveryState
     
     private val responseBuffer = mutableListOf<String>()
     private var listMode: ListMode? = null
@@ -665,6 +676,19 @@ class MarauderRepository(context: Context) {
     }
 
     fun downloadFile(filename: String): Flow<ByteArray> = flow {
+        // Get file size from the list
+        val fileEntry = _fileList.value.find { it.name == filename }
+        val totalSize = fileEntry?.size ?: 0L
+        var downloadedSize = 0L
+        
+        // Initialize progress
+        _downloadProgress.value = DownloadProgress(
+            filename = filename,
+            bytesDownloaded = 0,
+            totalBytes = totalSize,
+            progress = 0f
+        )
+        
         // Request download
         val nameBytes = filename.toByteArray()
         val payload = ByteArray(1 + nameBytes.size)
@@ -682,15 +706,49 @@ class MarauderRepository(context: Context) {
             withTimeoutOrNull(60000) { // 60s timeout just in case
                 _fileDownloadChunks.collect { chunk ->
                     if (chunk.seq == -1) {
+                        // EOF reached - mark as complete
+                        _downloadProgress.value = DownloadProgress(
+                            filename = filename,
+                            bytesDownloaded = downloadedSize,
+                            totalBytes = totalSize,
+                            progress = 1.0f,
+                            isComplete = true
+                        )
                         throw CancellationException("EOF")
                     }
+                    downloadedSize += chunk.data.size
+                    val progress = if (totalSize > 0) downloadedSize.toFloat() / totalSize else 0f
+                    
+                    // Update progress
+                    _downloadProgress.value = DownloadProgress(
+                        filename = filename,
+                        bytesDownloaded = downloadedSize,
+                        totalBytes = totalSize,
+                        progress = progress
+                    )
+                    
                     emit(chunk.data)
                 }
             }
         } catch (e: CancellationException) {
-            // Normal end of stream
+            // Normal end of stream - already marked complete above
         } catch (e: Exception) {
-            // Error
+            // Error occurred
+            _downloadProgress.value = DownloadProgress(
+                filename = filename,
+                bytesDownloaded = downloadedSize,
+                totalBytes = totalSize,
+                progress = if (totalSize > 0) downloadedSize.toFloat() / totalSize else 0f,
+                isComplete = false,
+                error = e.message ?: "Download failed"
+            )
+            throw e
+        } finally {
+            // Clear progress state after download completes or fails
+            scope.launch {
+                delay(2000) // Keep visible for 2 seconds
+                _downloadProgress.value = null
+            }
         }
     }
     
@@ -791,6 +849,16 @@ class MarauderRepository(context: Context) {
     }
     
     fun release() {
+        // Stop any ongoing operations
+        liveScanJob?.cancel()
+        
+        // Release recovery manager
+        recoveryManager.release()
+        
+        // Release serial manager
         serialManager.release()
+        
+        // Cancel scope
+        scope.cancel()
     }
 }

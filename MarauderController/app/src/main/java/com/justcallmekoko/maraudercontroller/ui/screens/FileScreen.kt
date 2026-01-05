@@ -20,6 +20,7 @@ import com.justcallmekoko.maraudercontroller.ui.viewmodel.MarauderViewModel
 @Composable
 fun FileScreen(viewModel: MarauderViewModel) {
     val fileList by viewModel.fileList.collectAsState()
+    val downloadProgress by viewModel.downloadProgress.collectAsState()
     val context = LocalContext.current
 
     Column(
@@ -45,6 +46,65 @@ fun FileScreen(viewModel: MarauderViewModel) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        
+        // Download Progress Indicator
+        downloadProgress?.let { progress ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Downloading: ${progress.filename}",
+                            color = Color.Cyan,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "${progress.progressPercentage}%",
+                            color = Color.Cyan,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    LinearProgressIndicator(
+                        progress = progress.progress,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp),
+                        color = Color.Cyan
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Text(
+                        text = "${formatSize(progress.bytesDownloaded)} / ${formatSize(progress.totalBytes)}",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    
+                    progress.error?.let { error ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Error: $error",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
 
         // File List
         LazyColumn(
