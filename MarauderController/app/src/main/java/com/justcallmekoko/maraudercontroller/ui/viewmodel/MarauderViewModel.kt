@@ -167,6 +167,14 @@ class MarauderViewModel(
         repository.listStations()
     }
     
+    fun clearStations() {
+        repository.clearStations()
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(100)
+            repository.listStations()
+        }
+    }
+    
     fun refreshSsids() {
         repository.listSsids()
     }

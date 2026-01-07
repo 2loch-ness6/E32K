@@ -95,7 +95,7 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
                     synchronized(this) {
                         val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
                         if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                            device?.let { connectToDevice(it) }
+                            device?.let { doConnect(it) }
                         } else {
                             _connectionState.value = ConnectionState.Error("USB permission denied")
                         }
@@ -150,7 +150,7 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
         val device = driver.device
         
         if (usbManager.hasPermission(device)) {
-            connectToDevice(device)
+            doConnect(device)
         } else {
             val permissionIntent = PendingIntent.getBroadcast(
                 context,
@@ -165,7 +165,7 @@ class SerialConnectionManager(private val context: Context) : SerialInputOutputM
     /**
      * Connect to USB device
      */
-    private fun connectToDevice(device: UsbDevice) {
+    private fun doConnect(device: UsbDevice) {
         scope.launch {
             try {
                 _connectionState.value = ConnectionState.Connecting
